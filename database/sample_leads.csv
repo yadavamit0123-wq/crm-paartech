@@ -1,0 +1,4 @@
+name,email,phone,company,source,city,state,priority
+Rajesh Kumar,rajesh@example.com,9876543210,Tech Solutions,website,Bangalore,Karnataka,medium
+Priya Sharma,priya@example.com,9876543211,Digital Marketing Co,meta,Mumbai,Maharashtra,high
+Amit Patel,amit@example.com,9876543212,Patel Industries,google,Ahmedabad,Gujarat,medium

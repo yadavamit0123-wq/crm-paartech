@@ -36,6 +36,27 @@
         .scrollbar-thin::-webkit-scrollbar { height: 5px; }
         @keyframes toast-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
         .toast-item { animation: toast-in .25s ease-out; }
+
+        /* Click feedback: har clickable element press hone par dabta hua dikhe */
+        a, button, [wire\:click], [role="button"] { transition: transform .08s ease, opacity .08s ease; }
+        a:active, button:active, [wire\:click]:active, [role="button"]:active { transform: scale(.96); opacity: .8; }
+
+        /* Global top progress bar (page navigation + livewire requests) */
+        #page-progress {
+            position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999;
+            pointer-events: none; opacity: 0; transition: opacity .2s;
+        }
+        #page-progress.active { opacity: 1; }
+        #page-progress .bar {
+            height: 100%; width: 40%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #6366f1);
+            border-radius: 0 3px 3px 0;
+            animation: progress-slide 1s ease-in-out infinite;
+        }
+        @keyframes progress-slide {
+            0% { margin-left: -40%; }
+            100% { margin-left: 100%; }
+        }
     </style>
 </head>
 <body class="bg-slate-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans antialiased">
@@ -59,6 +80,7 @@
     </div>
 
     <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-2 w-80 max-w-[calc(100vw-2rem)]"></div>
+    <div id="page-progress"><div class="bar"></div></div>
 
     <audio id="notification-sound" preload="auto">
         <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAf16AAABAAgAZGF0YUtvT19XQVZFZm10IBAAAAABAAEAQB8AAEAf16AAABAAgAZGF0YU" type="audio/wav">
@@ -96,6 +118,35 @@
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
+
+        // ── Click/tap feedback: progress bar on navigation + livewire actions ──
+        (function () {
+            const progress = document.getElementById('page-progress');
+            let hideTimer = null;
+            const show = () => { clearTimeout(hideTimer); progress.classList.add('active'); };
+            const hide = () => { hideTimer = setTimeout(() => progress.classList.remove('active'), 150); };
+
+            // Full page navigations (normal links)
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a[href]');
+                if (!link) return;
+                const href = link.getAttribute('href') || '';
+                if (href.startsWith('#') || link.target === '_blank' || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('sms:') || href.startsWith('javascript')) return;
+                show();
+            });
+            window.addEventListener('pageshow', () => progress.classList.remove('active'));
+
+            // Livewire request lifecycle (wire:click, wire:model updates, navigate)
+            document.addEventListener('livewire:init', () => {
+                Livewire.hook('request', ({ succeed, fail }) => {
+                    show();
+                    succeed(hide);
+                    fail(hide);
+                });
+            });
+            document.addEventListener('livewire:navigating', show);
+            document.addEventListener('livewire:navigated', () => progress.classList.remove('active'));
+        })();
     </script>
 </body>
 </html>

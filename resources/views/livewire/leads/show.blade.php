@@ -336,9 +336,9 @@
             </div>
             <p class="text-xs text-gray-500 mb-4">Template select karein — wa.me pe pre-filled message khulega aur timeline me log hoga.</p>
             <div class="space-y-2">
-                @foreach($whatsappTemplates as $i => $template)
+                @foreach($whatsappPreviews as $i => $preview)
                 <button wire:click="sendWhatsappTemplate({{ $i }})" class="w-full text-left p-3 border rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 text-sm">
-                    {{ str_replace('{{name}}', $lead->name, $template) }}
+                    {{ $preview }}
                 </button>
                 @endforeach
             </div>

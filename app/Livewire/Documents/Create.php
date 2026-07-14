@@ -51,6 +51,17 @@ class Create extends Component
     public bool $showSignature = false;
     public string $signature_name = '';
     public string $signature_title = '';
+    public $signatureUpload;
+    public ?string $signature_image_path = null;
+    public $stampUpload;
+    public ?string $stamp_image_path = null;
+    public bool $showPaymentLink = false;
+    public string $payment_link = '';
+    public bool $showUpi = false;
+    public string $payment_upi = '';
+    public bool $showQr = false;
+    public $qrUpload;
+    public ?string $qr_image_path = null;
     public bool $showContactDetails = false;
     public string $contact_person = '';
     public string $contact_phone = '';
@@ -162,6 +173,15 @@ class Create extends Component
         $this->showSignature = ! empty($sig);
         $this->signature_name = $sig['name'] ?? '';
         $this->signature_title = $sig['title'] ?? '';
+        $this->signature_image_path = $sig['signature_image'] ?? null;
+        $this->stamp_image_path = $sig['stamp_image'] ?? null;
+        $pay = $document->payment_options ?? [];
+        $this->showPaymentLink = ! empty($pay['link']);
+        $this->payment_link = $pay['link'] ?? '';
+        $this->showUpi = ! empty($pay['upi']);
+        $this->payment_upi = $pay['upi'] ?? '';
+        $this->showQr = ! empty($pay['qr_image']);
+        $this->qr_image_path = $pay['qr_image'] ?? null;
         $contact = $document->contact_details ?? [];
         $this->showContactDetails = ! empty($contact);
         $this->contact_person = $contact['person'] ?? '';
@@ -286,6 +306,92 @@ class Create extends Component
             Storage::disk('public')->delete($this->logo_path);
         }
         $this->logo_path = null;
+    }
+
+    protected function storeImageUpload($file, string $folder): ?string
+    {
+        try {
+            validator(
+                ['file' => $file],
+                ['file' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:5120']
+            )->validate();
+
+            return $file->store('documents/'.$folder.'/'.auth()->user()->tenant_id, 'public');
+        } catch (\Throwable $e) {
+            $this->dispatch('notify', message: 'Upload failed: image (JPG/PNG, max 5MB) hi allowed hai', type: 'error');
+
+            return null;
+        }
+    }
+
+    public function updatedSignatureUpload(): void
+    {
+        if (! $this->signatureUpload) {
+            return;
+        }
+        if ($path = $this->storeImageUpload($this->signatureUpload, 'signatures')) {
+            if ($this->signature_image_path) {
+                Storage::disk('public')->delete($this->signature_image_path);
+            }
+            $this->signature_image_path = $path;
+            $this->dispatch('notify', message: 'Signature image uploaded');
+        }
+        $this->signatureUpload = null;
+    }
+
+    public function removeSignatureImage(): void
+    {
+        if ($this->signature_image_path) {
+            Storage::disk('public')->delete($this->signature_image_path);
+        }
+        $this->signature_image_path = null;
+    }
+
+    public function updatedStampUpload(): void
+    {
+        if (! $this->stampUpload) {
+            return;
+        }
+        if ($path = $this->storeImageUpload($this->stampUpload, 'stamps')) {
+            if ($this->stamp_image_path) {
+                Storage::disk('public')->delete($this->stamp_image_path);
+            }
+            $this->stamp_image_path = $path;
+            $this->dispatch('notify', message: 'Company stamp uploaded');
+        }
+        $this->stampUpload = null;
+    }
+
+    public function removeStampImage(): void
+    {
+        if ($this->stamp_image_path) {
+            Storage::disk('public')->delete($this->stamp_image_path);
+        }
+        $this->stamp_image_path = null;
+    }
+
+    public function updatedQrUpload(): void
+    {
+        if (! $this->qrUpload) {
+            return;
+        }
+        if ($path = $this->storeImageUpload($this->qrUpload, 'qr')) {
+            if ($this->qr_image_path) {
+                Storage::disk('public')->delete($this->qr_image_path);
+            }
+            $this->qr_image_path = $path;
+            $this->showQr = true;
+            $this->dispatch('notify', message: 'Payment QR uploaded');
+        }
+        $this->qrUpload = null;
+    }
+
+    public function removeQrImage(): void
+    {
+        if ($this->qr_image_path) {
+            Storage::disk('public')->delete($this->qr_image_path);
+        }
+        $this->qr_image_path = null;
     }
 
     public function updatedAttachmentUploads(): void
@@ -620,7 +726,17 @@ class Create extends Component
             'customer_phone' => $this->customer_phone ?: null,
             'customer_email' => $this->customer_email ?: null,
             'logo_path' => $this->logo_path,
-            'signature_data' => $this->showSignature ? ['name' => $this->signature_name, 'title' => $this->signature_title] : null,
+            'signature_data' => $this->showSignature ? array_filter([
+                'name' => $this->signature_name,
+                'title' => $this->signature_title,
+                'signature_image' => $this->signature_image_path,
+                'stamp_image' => $this->stamp_image_path,
+            ]) : null,
+            'payment_options' => array_filter([
+                'link' => $this->showPaymentLink ? trim($this->payment_link) : null,
+                'upi' => $this->showUpi ? trim($this->payment_upi) : null,
+                'qr_image' => $this->showQr ? $this->qr_image_path : null,
+            ]) ?: null,
             'attachments' => count($this->savedAttachments) ? $this->savedAttachments : null,
             'contact_details' => $this->showContactDetails ? [
                 'person' => $this->contact_person,

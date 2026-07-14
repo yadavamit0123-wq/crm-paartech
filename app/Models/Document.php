@@ -19,7 +19,7 @@ class Document extends Model
         'doc_discount_type', 'doc_discount_value', 'taxable_amount', 'cgst_amount', 'sgst_amount',
         'igst_amount', 'total_tax', 'grand_total', 'total_in_words', 'place_of_supply',
         'customer_gstin', 'customer_name', 'customer_address', 'customer_state', 'customer_phone', 'customer_email',
-        'seller_snapshot', 'logo_path', 'signature_data', 'attachments', 'contact_details', 'additional_info',
+        'seller_snapshot', 'logo_path', 'signature_data', 'payment_options', 'attachments', 'contact_details', 'additional_info',
         'exchange_rate', 'additional_charges', 'notes', 'terms_conditions', 'advanced_options', 'shipping_details',
         'created_by', 'sent_at', 'paid_at',
     ];
@@ -48,6 +48,7 @@ class Document extends Model
             'advanced_options' => 'array',
             'shipping_details' => 'array',
             'signature_data' => 'array',
+            'payment_options' => 'array',
             'attachments' => 'array',
             'contact_details' => 'array',
             'doc_discount_value' => 'decimal:2',

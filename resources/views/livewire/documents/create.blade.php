@@ -381,7 +381,78 @@
                     <input type="text" wire:model="signature_name" placeholder="Signatory Name" class="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
                     <input type="text" wire:model="signature_title" placeholder="Designation / Title" class="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
                 </div>
+                <div class="grid md:grid-cols-2 gap-3 mt-3">
+                    <div class="border dark:border-gray-600 rounded-lg p-3">
+                        <label class="text-xs font-medium text-gray-500 block mb-2">Digital Signature (image)</label>
+                        @if($signature_image_path)
+                        <div class="flex items-center gap-3">
+                            <img src="{{ Storage::disk('public')->url($signature_image_path) }}" class="h-12 object-contain bg-gray-50 rounded border" alt="Signature">
+                            <button type="button" wire:click="removeSignatureImage" class="text-red-500 text-xs">Remove</button>
+                        </div>
+                        @else
+                        <input type="file" wire:model="signatureUpload" accept="image/*" class="text-xs w-full">
+                        <div wire:loading wire:target="signatureUpload" class="text-xs text-indigo-500 mt-1">Uploading…</div>
+                        <p class="text-[11px] text-gray-400 mt-1">PNG (transparent background best), max 5MB</p>
+                        @endif
+                    </div>
+                    <div class="border dark:border-gray-600 rounded-lg p-3">
+                        <label class="text-xs font-medium text-gray-500 block mb-2">Company Stamp / Seal (image)</label>
+                        @if($stamp_image_path)
+                        <div class="flex items-center gap-3">
+                            <img src="{{ Storage::disk('public')->url($stamp_image_path) }}" class="h-12 object-contain bg-gray-50 rounded border" alt="Stamp">
+                            <button type="button" wire:click="removeStampImage" class="text-red-500 text-xs">Remove</button>
+                        </div>
+                        @else
+                        <input type="file" wire:model="stampUpload" accept="image/*" class="text-xs w-full">
+                        <div wire:loading wire:target="stampUpload" class="text-xs text-indigo-500 mt-1">Uploading…</div>
+                        <p class="text-[11px] text-gray-400 mt-1">Round/square seal image, max 5MB</p>
+                        @endif
+                    </div>
+                </div>
                 @endif
+                <p class="text-[11px] text-gray-400 mt-3">Signature block na ho to PDF footer par "computer generated — no signature required" note automatically aata hai.</p>
+            </div>
+
+            {{-- Payment Options --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
+                <h4 class="text-sm font-semibold mb-3">Payment Options <span class="text-xs font-normal text-gray-400">— PDF par show hoga</span></h4>
+                <div class="space-y-3">
+                    <div>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" wire:model.live="showPaymentLink" class="rounded"> Payment Link
+                        </label>
+                        @if($showPaymentLink)
+                        <input type="url" wire:model="payment_link" placeholder="https://razorpay.me/yourcompany ya koi bhi payment URL" class="mt-2 w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
+                        @endif
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" wire:model.live="showUpi" class="rounded"> UPI ID
+                        </label>
+                        @if($showUpi)
+                        <input type="text" wire:model="payment_upi" placeholder="yourcompany@upi" class="mt-2 w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
+                        @endif
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" wire:model.live="showQr" class="rounded"> Payment QR Code
+                        </label>
+                        @if($showQr)
+                        <div class="mt-2">
+                            @if($qr_image_path)
+                            <div class="flex items-center gap-3">
+                                <img src="{{ Storage::disk('public')->url($qr_image_path) }}" class="h-20 w-20 object-contain bg-gray-50 rounded border" alt="QR">
+                                <button type="button" wire:click="removeQrImage" class="text-red-500 text-xs">Remove</button>
+                            </div>
+                            @else
+                            <input type="file" wire:model="qrUpload" accept="image/*" class="text-xs w-full">
+                            <div wire:loading wire:target="qrUpload" class="text-xs text-indigo-500 mt-1">Uploading…</div>
+                            <p class="text-[11px] text-gray-400 mt-1">UPI/Bank QR image upload karein (PNG/JPG, max 5MB)</p>
+                            @endif
+                        </div>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             {{-- Terms & Notes --}}

@@ -477,9 +477,14 @@ class Show extends Component
         $timeline = $this->lead->activities()->with('user')->latest()->get();
         $openTasks = $this->lead->tasks()->where('status', 'pending')->get();
         $whatsappTemplates = $this->getWhatsappTemplates();
+        // Blade mein literal {{name}} echo nahi kar sakte (compile error), isliye preview yahin banate hain
+        $whatsappPreviews = array_map(
+            fn ($t) => str_replace('{{name}}', $this->lead->name, $t),
+            $whatsappTemplates
+        );
         $customFields = $this->getCustomFields();
 
-        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates', 'customFields'))
+        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates', 'whatsappPreviews', 'customFields'))
             ->layout('layouts.app');
     }
 }

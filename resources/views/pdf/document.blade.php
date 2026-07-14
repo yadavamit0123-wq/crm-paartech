@@ -24,9 +24,10 @@
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
-            color: #374151;
-            line-height: 1.5;
+            font-size: 10.5px;
+            color: #1f2937;
+            line-height: 1.55;
+            word-wrap: break-word;
         }
 
         /* ── Repeating top bar (fixed = every page) ── */
@@ -40,9 +41,9 @@
             padding-bottom: 6px;
         }
         .top-bar table { width: 100%; border-collapse: collapse; }
-        .top-bar .lbl { font-size: 7px; color: #9ca3af; text-transform: capitalize; }
-        .top-bar .val { font-size: 9px; font-weight: bold; color: #111827; margin-top: 2px; }
-        .top-bar .disclaimer { font-size: 6.5px; color: #9ca3af; text-align: right; line-height: 1.3; }
+        .top-bar .lbl { font-size: 8px; color: #6b7280; text-transform: capitalize; }
+        .top-bar .val { font-size: 10px; font-weight: bold; color: #111827; margin-top: 2px; word-wrap: break-word; }
+        .top-bar .disclaimer { font-size: 7.5px; color: #6b7280; text-align: right; line-height: 1.35; }
 
         /* ── Hero (page 1 only feel) ── */
         .hero { margin-bottom: 16px; padding-top: 4px; }
@@ -60,7 +61,7 @@
             margin-bottom: 10px;
         }
         .hero-meta table { width: 100%; }
-        .hero-meta td { font-size: 9.5px; padding: 2px 0; vertical-align: top; }
+        .hero-meta td { font-size: 10px; padding: 2px 0; vertical-align: top; }
         .hero-meta .label { color: #6b7280; width: 110px; }
         .hero-meta .value { color: #111827; font-weight: bold; }
 
@@ -77,8 +78,8 @@
             color: {{ $themeColor }};
             margin-bottom: 8px;
         }
-        .party-name { font-size: 11px; font-weight: bold; color: #111827; margin-bottom: 4px; }
-        .party-line { font-size: 9px; color: #4b5563; line-height: 1.55; }
+        .party-name { font-size: 11.5px; font-weight: bold; color: #111827; margin-bottom: 4px; }
+        .party-line { font-size: 9.5px; color: #374151; line-height: 1.6; word-wrap: break-word; }
 
         /* ── Items table ── */
         .items-table {
@@ -91,24 +92,25 @@
         .items-table th {
             background: {{ $themeColor }};
             color: #ffffff;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: bold;
-            padding: 8px 6px;
+            padding: 9px 7px;
             text-align: left;
             border: none;
         }
         .items-table th.right { text-align: right; }
         .items-table td {
-            padding: 10px 6px;
+            padding: 10px 7px;
             border-bottom: 1px solid #f3f4f6;
             vertical-align: top;
-            font-size: 9px;
+            font-size: 9.5px;
             word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .items-table tbody tr { page-break-inside: avoid; }
-        .item-num { font-weight: bold; color: #111827; font-size: 10px; }
-        .item-name { font-weight: bold; color: #111827; font-size: 10px; line-height: 1.4; }
-        .item-body { font-size: 8.5px; color: #4b5563; margin-top: 6px; line-height: 1.45; }
+        .item-num { font-weight: bold; color: #111827; font-size: 10.5px; }
+        .item-name { font-weight: bold; color: #111827; font-size: 10.5px; line-height: 1.45; }
+        .item-body { font-size: 9px; color: #374151; margin-top: 6px; line-height: 1.5; }
         .item-body ul { margin: 4px 0 4px 14px; padding: 0; }
         .item-body li { margin-bottom: 2px; }
         .item-body p { margin-bottom: 3px; }
@@ -137,15 +139,16 @@
             vertical-align: top;
             width: 55%;
             padding-right: 16px;
-            font-size: 9px;
+            font-size: 9.5px;
             color: #374151;
+            word-wrap: break-word;
         }
         .words-cell strong { color: #111827; }
         .nums-cell { vertical-align: top; width: 45%; }
         .nums-table { width: 100%; border-collapse: collapse; }
         .nums-table td {
-            padding: 5px 8px;
-            font-size: 9px;
+            padding: 6px 8px;
+            font-size: 9.5px;
             border-bottom: 1px solid #f3f4f6;
         }
         .nums-table td:first-child { color: #6b7280; text-align: left; }
@@ -163,17 +166,43 @@
         /* ── Footer notes ── */
         .footer-notes {
             margin-top: 14px;
-            font-size: 8.5px;
-            color: #4b5563;
-            line-height: 1.55;
+            font-size: 9px;
+            color: #374151;
+            line-height: 1.6;
             page-break-inside: avoid;
+            word-wrap: break-word;
         }
         .bank-strip {
             margin-top: 12px;
-            padding: 8px 10px;
+            padding: 9px 10px;
             background: #f9fafb;
             border-left: 3px solid {{ $themeColor }};
-            font-size: 8.5px;
+            font-size: 9px;
+            page-break-inside: avoid;
+            word-wrap: break-word;
+        }
+        .payment-strip {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            page-break-inside: avoid;
+        }
+        .payment-strip table { width: 100%; border-collapse: collapse; }
+        .payment-strip td { vertical-align: top; font-size: 9px; color: #374151; padding: 0 6px; }
+        .payment-strip .pay-title { font-size: 9.5px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 4px; }
+        .signature-block {
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+        .computer-note {
+            margin-top: 16px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 8px;
+            color: #9ca3af;
+            text-align: center;
             page-break-inside: avoid;
         }
     </style>
@@ -317,12 +346,12 @@
                     <div class="item-body">{!! strip_tags($item->long_description, '<br><b><strong><i><em><ul><ol><li><p>') !!}</div>
                     @endif
                     @if($isGst && $item->hsn_sac)
-                    <div style="font-size:7.5px;color:#9ca3af;margin-top:4px;">HSN/SAC: {{ $item->hsn_sac }}@if($showTaxSummary && $item->gst_rate) | GST {{ $item->gst_rate }}%@endif</div>
+                    <div style="font-size:8px;color:#6b7280;margin-top:4px;">HSN/SAC: {{ $item->hsn_sac }}@if($showTaxSummary && $item->gst_rate) | GST {{ $item->gst_rate }}%@endif</div>
                     @endif
                 </td>
                 <td class="right" style="vertical-align:top;padding-top:12px;">
                     {{ number_format($item->quantity, 0) == $item->quantity ? number_format($item->quantity, 0) : number_format($item->quantity, 2) }}
-                    @if($item->unit && $item->unit !== 'Nos')<br><span style="font-size:7px;color:#9ca3af;">{{ $item->unit }}</span>@endif
+                    @if($item->unit && $item->unit !== 'Nos')<br><span style="font-size:8px;color:#6b7280;">{{ $item->unit }}</span>@endif
                 </td>
                 <td class="right" style="vertical-align:top;padding-top:12px;">{{ $currency }}{{ number_format($item->rate, 0) == $item->rate ? number_format($item->rate, 0) : number_format($item->rate, 2) }}</td>
                 @if($hasDiscountCol)
@@ -393,18 +422,86 @@
     </div>
     @endif
 
-    @if($document->signature_data)
-    <div style="margin-top:20px;text-align:right;page-break-inside:avoid;">
-        <div style="display:inline-block;text-align:left;border-top:1px solid #d1d5db;padding-top:6px;min-width:160px;">
-            <strong>{{ $document->signature_data['name'] ?? '' }}</strong><br>
-            <span style="font-size:8px;color:#6b7280;">{{ $document->signature_data['title'] ?? '' }}</span>
-        </div>
+    {{-- ═══ PAYMENT OPTIONS ═══ --}}
+    @php
+        $pay = $document->payment_options ?? [];
+        $resolveFile = function (?string $path) {
+            if (! $path) { return null; }
+            foreach ([public_path('storage/'.$path), storage_path('app/public/'.$path)] as $candidate) {
+                if (file_exists($candidate)) { return $candidate; }
+            }
+            return null;
+        };
+        $qrFile = $resolveFile($pay['qr_image'] ?? null);
+    @endphp
+    @if(!empty($pay['link']) || !empty($pay['upi']) || $qrFile)
+    <div class="payment-strip">
+        <table>
+            <tr>
+                <td style="width:{{ $qrFile ? '75%' : '100%' }};">
+                    <div class="pay-title">Payment Options</div>
+                    @if(!empty($pay['link']))
+                    <div style="margin-bottom:3px;"><strong>Pay Online:</strong> <a href="{{ $pay['link'] }}" style="color:{{ $themeColor }};text-decoration:none;">{{ $pay['link'] }}</a></div>
+                    @endif
+                    @if(!empty($pay['upi']))
+                    <div style="margin-bottom:3px;"><strong>UPI ID:</strong> {{ $pay['upi'] }}</div>
+                    @endif
+                    @if($qrFile)
+                    <div style="color:#6b7280;">Scan the QR code to pay instantly via any UPI app.</div>
+                    @endif
+                </td>
+                @if($qrFile)
+                <td style="width:25%;text-align:right;">
+                    <img src="{{ $qrFile }}" style="width:70px;height:70px;object-fit:contain;" alt="Payment QR">
+                </td>
+                @endif
+            </tr>
+        </table>
     </div>
     @endif
 
     <div class="bank-strip">
         <strong>Bank Details:</strong>
         {{ $bank['bank_name'] }} | A/C: {{ $bank['account_number'] }} | IFSC: {{ $bank['ifsc'] }} | UPI: {{ $bank['upi_id'] }}
+    </div>
+
+    {{-- ═══ SIGNATURE + STAMP ═══ --}}
+    @php
+        $sig = $document->signature_data ?? [];
+        $sigImage = $resolveFile($sig['signature_image'] ?? null);
+        $stampImage = $resolveFile($sig['stamp_image'] ?? null);
+    @endphp
+    @if($sig)
+    <div class="signature-block">
+        <table style="width:100%;border-collapse:collapse;">
+            <tr>
+                <td style="width:60%;"></td>
+                @if($stampImage)
+                <td style="width:18%;text-align:center;vertical-align:bottom;">
+                    <img src="{{ $stampImage }}" style="max-height:64px;max-width:80px;opacity:0.9;" alt="Stamp">
+                </td>
+                @endif
+                <td style="width:22%;text-align:right;vertical-align:bottom;">
+                    <div style="display:inline-block;text-align:center;min-width:150px;">
+                        @if($sigImage)
+                        <img src="{{ $sigImage }}" style="max-height:40px;max-width:140px;margin-bottom:4px;" alt="Signature"><br>
+                        @else
+                        <div style="height:34px;"></div>
+                        @endif
+                        <div style="border-top:1px solid #d1d5db;padding-top:5px;">
+                            <strong style="font-size:9.5px;">{{ $sig['name'] ?? '' }}</strong><br>
+                            <span style="font-size:8.5px;color:#6b7280;">{{ $sig['title'] ?? 'Authorised Signatory' }}</span>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    @endif
+
+    {{-- ═══ COMPUTER GENERATED NOTE (footer) ═══ --}}
+    <div class="computer-note">
+        This is a computer generated {{ strtolower($typeLabel) }} and does not require a physical signature or stamp.
     </div>
 
     {{-- Page numbers --}}

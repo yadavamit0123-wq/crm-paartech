@@ -20,4 +20,15 @@ yarn-error.log
 .DS_Store
 Thumbs.db
 *.log
+
+# Laravel runtime — server par auto-generate hota hai, Git mein nahi
+/storage/framework/cache/data/
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitkeep
+/storage/framework/views/*
+!/storage/framework/views/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
 /storage/app/video_scan/

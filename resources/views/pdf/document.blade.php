@@ -219,14 +219,20 @@
                     <td class="label">{{ $typeLabel }} Date</td>
                     <td class="value">{{ $document->issue_date->format('M d, Y') }}</td>
                 </tr>
-                @if($document->due_date)
+                @if($document->due_date || $document->valid_until)
                 <tr>
+                    @if($document->due_date)
                     <td class="label">Due Date</td>
                     <td class="value">{{ $document->due_date->format('M d, Y') }}</td>
-                    @if($document->valid_until)
                     <td></td>
+                    @else
+                    <td></td><td></td><td></td>
+                    @endif
+                    @if($document->valid_until)
                     <td class="label">Valid Until</td>
                     <td class="value">{{ $document->valid_until->format('M d, Y') }}</td>
+                    @else
+                    <td></td><td></td>
                     @endif
                 </tr>
                 @endif
@@ -239,8 +245,17 @@
         <tr>
             <td class="party-box">
                 <div class="party-title">{{ $typeLabel }} From</div>
-                @if($document->logo_path && file_exists(public_path('storage/'.$document->logo_path)))
-                <img src="{{ public_path('storage/'.$document->logo_path) }}" style="max-height:44px;max-width:120px;margin-bottom:6px;" alt="">
+                @php
+                    // storage:link missing hone par bhi logo dikhe — direct storage path fallback
+                    $logoFile = null;
+                    if ($document->logo_path) {
+                        foreach ([public_path('storage/'.$document->logo_path), storage_path('app/public/'.$document->logo_path)] as $candidate) {
+                            if (file_exists($candidate)) { $logoFile = $candidate; break; }
+                        }
+                    }
+                @endphp
+                @if($logoFile)
+                <img src="{{ $logoFile }}" style="max-height:44px;max-width:120px;margin-bottom:6px;" alt="">
                 @endif
                 <div class="party-name">{{ $tenant->name }}</div>
                 <div class="party-line">
@@ -351,7 +366,11 @@
                             <td>{{ $currency }}{{ number_format($document->grand_total, 2) }}</td>
                         </tr>
                         @if($document->exchange_rate && $document->exchange_rate > 0)
+                        @if($document->currency === 'USD')
+                        <tr><td>INR Equivalent</td><td>₹ {{ number_format($document->grand_total * $document->exchange_rate, 2) }}</td></tr>
+                        @else
                         <tr><td>USD Equivalent</td><td>$ {{ number_format($document->grand_total / $document->exchange_rate, 2) }}</td></tr>
+                        @endif
                         @endif
                     </table>
                 </td>

@@ -147,12 +147,13 @@ class DocumentService
             'igst_amount' => round($igst, 2),
             'total_tax' => round($totalTax, 2),
             'grand_total' => $grandTotal,
-            'total_in_words' => AmountInWords::inr($grandTotal),
+            'total_in_words' => AmountInWords::currency($grandTotal, $options['currency'] ?? 'INR'),
         ];
     }
 
     public function previewTotals(array $items, bool $isGst, Tenant $tenant, ?string $customerState, array $options = []): array
     {
+        $options['currency'] ??= 'INR';
         $isInterState = $this->isInterState($tenant, null, $customerState);
         $calculated = [];
         foreach ($items as $idx => $item) {
@@ -191,6 +192,7 @@ class DocumentService
             'doc_discount_type' => $data['doc_discount_type'] ?? 'percent',
             'doc_discount_value' => $data['doc_discount_value'] ?? 0,
             'additional_charges' => $data['additional_charges'] ?? [],
+            'currency' => $data['currency'] ?? 'INR',
         ]);
 
         $templateKey = $data['template_key'] ?? 'classic_purple';
@@ -262,6 +264,7 @@ class DocumentService
             'doc_discount_type' => $data['doc_discount_type'] ?? $document->doc_discount_type,
             'doc_discount_value' => $data['doc_discount_value'] ?? $document->doc_discount_value,
             'additional_charges' => $data['additional_charges'] ?? $document->additional_charges ?? [],
+            'currency' => $data['currency'] ?? $document->currency ?? 'INR',
         ]);
 
         $templateKey = $data['template_key'] ?? $document->template_key;
@@ -503,12 +506,11 @@ class DocumentService
             return null;
         }
 
-        $stage = LeadStage::where('tenant_id', $tenant->id)->where('is_default', true)->first()
-            ?? LeadStage::where('tenant_id', $tenant->id)->first();
+        $stage = LeadStage::ensureDefault($tenant->id);
 
         $lead = Lead::create([
             'tenant_id' => $tenant->id,
-            'lead_stage_id' => $stage?->id,
+            'lead_stage_id' => $stage->id,
             'created_by' => auth()->id(),
             'assigned_to' => auth()->id(),
             'name' => $data['customer_name'] ?? 'Document Lead',

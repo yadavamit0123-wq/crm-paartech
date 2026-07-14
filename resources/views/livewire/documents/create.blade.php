@@ -247,10 +247,10 @@
                     @php
                         $prevGroup = $index > 0 ? ($items[$index - 1]['group_name'] ?? '') : '';
                         $currentGroup = $item['group_name'] ?? '';
-                        $gross = ($item['quantity'] ?? 0) * ($item['rate'] ?? 0);
+                        $gross = (float) ($item['quantity'] ?? 0) * (float) ($item['rate'] ?? 0);
                         $disc = ($item['discount_type'] ?? 'fixed') === 'percent'
-                            ? $gross * (($item['discount_percent'] ?? 0) / 100)
-                            : ($item['discount_amount'] ?? 0);
+                            ? $gross * ((float) ($item['discount_percent'] ?? 0) / 100)
+                            : (float) ($item['discount_amount'] ?? 0);
                         $lineAmt = max($gross - $disc, 0);
                     @endphp
 
@@ -438,7 +438,7 @@
                     @if(trim($prevItem['description'] ?? '') !== '')
                     <div class="flex justify-between text-xs py-1 border-b dark:border-gray-700">
                         <span class="truncate pr-2">{{ $prevItem['description'] }}</span>
-                        <span class="shrink-0">{{ $currencySymbol }}{{ number_format(max((($prevItem['quantity'] ?? 0) * ($prevItem['rate'] ?? 0)), 0), 2) }}</span>
+                        <span class="shrink-0">{{ $currencySymbol }}{{ number_format(max(((float) ($prevItem['quantity'] ?? 0) * (float) ($prevItem['rate'] ?? 0)), 0), 2) }}</span>
                     </div>
                     @endif
                     @endforeach
@@ -489,8 +489,13 @@
                     </div>
                     @if($exchange_rate && $exchange_rate > 0)
                     <div class="flex justify-between text-blue-600">
+                        @if($currency === 'USD')
+                        <span class="text-gray-500">INR Equivalent</span>
+                        <span>₹{{ number_format(($totals['grand_total'] ?? 0) * $exchange_rate, 2) }}</span>
+                        @else
                         <span class="text-gray-500">USD Equivalent</span>
                         <span>${{ number_format(($totals['grand_total'] ?? 0) / $exchange_rate, 2) }}</span>
+                        @endif
                     </div>
                     @endif
                     <p class="text-xs text-gray-500 italic">{{ $totals['total_in_words'] ?? '' }}</p>

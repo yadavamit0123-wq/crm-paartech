@@ -14,7 +14,7 @@ class BulkUpload extends Component
 
     public $csvFile;
     public array $preview = [];
-    public array $errors = [];
+    public array $importErrors = [];
     public int $imported = 0;
 
     public function processUpload(): void
@@ -31,11 +31,10 @@ class BulkUpload extends Component
         $headers = array_map(fn ($h) => strtolower(trim($h)), $headers);
 
         $this->preview = [];
-        $this->errors = [];
+        $this->importErrors = [];
         $this->imported = 0;
 
-        $defaultStage = LeadStage::where('is_default', true)->first()
-            ?? LeadStage::orderBy('sort_order')->first();
+        $defaultStage = LeadStage::ensureDefault();
 
         $rowNum = 1;
         while (($row = fgetcsv($handle)) !== false) {
@@ -48,7 +47,7 @@ class BulkUpload extends Component
             $name = trim($data['name'] ?? '');
 
             if (empty($name)) {
-                $this->errors[] = "Row {$rowNum}: Name is required";
+                $this->importErrors[] = "Row {$rowNum}: Name is required";
 
                 continue;
             }
@@ -74,7 +73,7 @@ class BulkUpload extends Component
                 $this->imported++;
                 $this->preview[] = $name;
             } catch (\Exception $e) {
-                $this->errors[] = "Row {$rowNum}: ".$e->getMessage();
+                $this->importErrors[] = "Row {$rowNum}: ".$e->getMessage();
             }
         }
 

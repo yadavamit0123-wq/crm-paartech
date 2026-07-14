@@ -314,6 +314,24 @@ class Index extends Component
         $this->dispatch('notify', message: 'Label created');
     }
 
+    public function setLeadStage(int $leadId, $stageId): void
+    {
+        if (! auth()->user()->hasPermission('leads.edit')) {
+            $this->dispatch('notify', message: 'Edit permission nahi hai', type: 'error');
+
+            return;
+        }
+        $stageId = (int) $stageId;
+        if (! $stageId || ! LeadStage::whereKey($stageId)->exists()) {
+            return;
+        }
+        $lead = Lead::findOrFail($leadId);
+        $old = $lead->stage?->name;
+        $lead->update(['lead_stage_id' => $stageId]);
+        $lead->logActivity('stage_change', "Status: {$old} → ".LeadStage::find($stageId)?->name);
+        $this->dispatch('notify', message: 'Status updated');
+    }
+
     public function setLeadLabel(int $leadId, $labelId): void
     {
         if (! auth()->user()->hasPermission('leads.edit')) {

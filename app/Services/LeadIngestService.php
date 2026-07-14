@@ -42,12 +42,11 @@ class LeadIngestService
             return $existing;
         }
 
-        $stage = LeadStage::where('tenant_id', $tenant->id)->where('is_default', true)->first()
-            ?? LeadStage::where('tenant_id', $tenant->id)->orderBy('sort_order')->first();
+        $stage = LeadStage::ensureDefault($tenant->id);
 
         $lead = Lead::withoutGlobalScopes()->create([
             'tenant_id' => $tenant->id,
-            'lead_stage_id' => $stage?->id,
+            'lead_stage_id' => $stage->id,
             'name' => $data['name'] ?? 'Unknown',
             'email' => $email,
             'phone' => $phone,

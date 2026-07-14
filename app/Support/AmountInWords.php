@@ -14,16 +14,23 @@ class AmountInWords
 
     public static function inr(float $amount): string
     {
-        $rupees = (int) floor($amount);
-        $paise = (int) round(($amount - $rupees) * 100);
+        return self::currency($amount, 'INR');
+    }
 
-        if ($rupees === 0 && $paise === 0) {
-            return 'Zero Rupees Only';
+    public static function currency(float $amount, string $currency = 'INR'): string
+    {
+        [$major, $minor] = $currency === 'USD' ? ['Dollars', 'Cents'] : ['Rupees', 'Paise'];
+
+        $whole = (int) floor($amount);
+        $fraction = (int) round(($amount - $whole) * 100);
+
+        if ($whole === 0 && $fraction === 0) {
+            return "Zero {$major} Only";
         }
 
-        $words = self::convertIndian($rupees).' Rupees';
-        if ($paise > 0) {
-            $words .= ' and '.self::convertIndian($paise).' Paise';
+        $words = self::convertIndian($whole).' '.$major;
+        if ($fraction > 0) {
+            $words .= ' and '.self::convertIndian($fraction).' '.$minor;
         }
 
         return $words.' Only';

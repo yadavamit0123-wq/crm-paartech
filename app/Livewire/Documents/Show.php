@@ -4,6 +4,7 @@ namespace App\Livewire\Documents;
 
 use App\Models\Document;
 use App\Services\DocumentService;
+use App\Services\PdfService;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 
@@ -96,9 +97,13 @@ class Show extends Component
         ]);
 
         try {
-            Mail::raw($this->emailMessage, function ($mail) {
+            $pdfContent = app(PdfService::class)->generateDocumentPdf($this->document)->output();
+            $filename = str_replace('/', '-', $this->document->document_number).'.pdf';
+
+            Mail::raw($this->emailMessage, function ($mail) use ($pdfContent, $filename) {
                 $mail->to($this->emailTo)
-                    ->subject($this->emailSubject);
+                    ->subject($this->emailSubject)
+                    ->attachData($pdfContent, $filename, ['mime' => 'application/pdf']);
             });
             $sent = true;
         } catch (\Throwable) {
@@ -177,11 +182,20 @@ class Show extends Component
         $canConvertProforma = $service->canConvert($this->document, 'proforma');
         $canConvertInvoice = $service->canConvert($this->document, 'invoice');
         $accent = $this->document->theme_color ?? '#7c3aed';
-        $usdTotal = ($this->document->exchange_rate && $this->document->exchange_rate > 0)
-            ? round($this->document->grand_total / $this->document->exchange_rate, 2)
+        $isUsd = $this->document->currency === 'USD';
+        $docSymbol = $isUsd ? '$' : '₹';
+        $hasRate = $this->document->exchange_rate && $this->document->exchange_rate > 0;
+        $convertedTotal = $hasRate
+            ? round($isUsd
+                ? $this->document->grand_total * $this->document->exchange_rate
+                : $this->document->grand_total / $this->document->exchange_rate, 2)
             : null;
+        $convertedLabel = $isUsd ? 'INR Equivalent' : 'USD Equivalent';
+        $convertedSymbol = $isUsd ? '₹' : '$';
 
-        return view('livewire.documents.show', compact('canConvertProforma', 'canConvertInvoice', 'accent', 'usdTotal'))
-            ->layout('layouts.app');
+        return view('livewire.documents.show', compact(
+            'canConvertProforma', 'canConvertInvoice', 'accent',
+            'docSymbol', 'convertedTotal', 'convertedLabel', 'convertedSymbol'
+        ))->layout('layouts.app');
     }
 }

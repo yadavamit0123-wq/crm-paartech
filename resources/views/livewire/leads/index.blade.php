@@ -156,6 +156,13 @@
                         <div class="text-xs text-gray-500">{{ $lead->phone }}</div>
                         @if($lead->label)<span class="text-xs px-2 py-0.5 rounded mt-1 inline-block" style="background:{{ $lead->label->color }}22;color:{{ $lead->label->color }}">{{ $lead->label->name }}</span>@endif
                     </a>
+                    @if(auth()->user()->hasPermission('leads.edit'))
+                    <select wire:change="setLeadStage({{ $lead->id }}, $event.target.value)" class="mt-2 w-full px-2 py-1 border rounded text-xs dark:bg-gray-700 dark:border-gray-600">
+                        @foreach($stages as $stg)
+                        <option value="{{ $stg->id }}" @selected($lead->lead_stage_id == $stg->id)>Move to: {{ $stg->name }}</option>
+                        @endforeach
+                    </select>
+                    @endif
                 </div>
                 @endforeach
             </div>
@@ -212,7 +219,15 @@
                     @endif
                     @if(in_array('status', $visibleColumns))
                     <td class="px-3 py-3">
+                        @if(auth()->user()->hasPermission('leads.edit'))
+                        <select wire:change="setLeadStage({{ $lead->id }}, $event.target.value)" class="px-2 py-1 rounded-full text-xs font-medium text-white border-0 cursor-pointer" style="background:{{ $lead->stage?->color ?? '#6366f1' }}">
+                            @foreach($stages as $stg)
+                            <option value="{{ $stg->id }}" @selected($lead->lead_stage_id == $stg->id)>{{ $stg->name }}</option>
+                            @endforeach
+                        </select>
+                        @else
                         <span class="px-2 py-1 rounded-full text-xs font-medium text-white" style="background:{{ $lead->stage?->color ?? '#6366f1' }}">{{ $lead->stage?->name ?? 'New' }}</span>
+                        @endif
                     </td>
                     @endif
                     @if(in_array('actions', $visibleColumns))

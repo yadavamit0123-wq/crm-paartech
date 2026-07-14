@@ -110,22 +110,22 @@
                         </td>
                         @if($document->is_gst_applicable)<td class="py-2 px-2">{{ $item->hsn_sac }}</td>@endif
                         <td class="py-2 px-2 text-right">{{ $item->quantity }} {{ $item->unit }}</td>
-                        <td class="py-2 px-2 text-right">₹{{ number_format($item->rate, 2) }}</td>
-                        <td class="py-2 px-2 text-right font-medium">₹{{ number_format($item->line_total, 2) }}</td>
+                        <td class="py-2 px-2 text-right">{{ $docSymbol }}{{ number_format($item->rate, 2) }}</td>
+                        <td class="py-2 px-2 text-right font-medium">{{ $docSymbol }}{{ number_format($item->line_total, 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
 
             <div class="text-right space-y-1 text-sm">
-                <div>Subtotal: ₹{{ number_format($document->subtotal, 2) }}</div>
-                @if($document->discount_amount > 0)<div>Discount: ₹{{ number_format($document->discount_amount, 2) }}</div>@endif
-                <div>Taxable: ₹{{ number_format($document->taxable_amount, 2) }}</div>
+                <div>Subtotal: {{ $docSymbol }}{{ number_format($document->subtotal, 2) }}</div>
+                @if($document->discount_amount > 0)<div>Discount: {{ $docSymbol }}{{ number_format($document->discount_amount, 2) }}</div>@endif
+                <div>Taxable: {{ $docSymbol }}{{ number_format($document->taxable_amount, 2) }}</div>
                 @if($document->is_gst_applicable && $document->total_tax > 0)
-                <div>Tax: ₹{{ number_format($document->total_tax, 2) }}</div>
+                <div>Tax: {{ $docSymbol }}{{ number_format($document->total_tax, 2) }}</div>
                 @endif
-                <div class="text-xl font-bold" style="color: {{ $accent }}">Grand Total: ₹{{ number_format($document->grand_total, 2) }}</div>
-                @if($usdTotal)<div class="text-blue-600">USD Equivalent: ${{ number_format($usdTotal, 2) }} (Rate: {{ $document->exchange_rate }})</div>@endif
+                <div class="text-xl font-bold" style="color: {{ $accent }}">Grand Total: {{ $docSymbol }}{{ number_format($document->grand_total, 2) }}</div>
+                @if($convertedTotal)<div class="text-blue-600">{{ $convertedLabel }}: {{ $convertedSymbol }}{{ number_format($convertedTotal, 2) }} (Rate: {{ $document->exchange_rate }})</div>@endif
                 @if($document->total_in_words)<p class="text-xs text-gray-500 italic">{{ $document->total_in_words }}</p>@endif
             </div>
 

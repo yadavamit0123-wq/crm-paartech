@@ -62,11 +62,11 @@ class LeadSources extends Component
 
     public function testSync(string $name): void
     {
-        $stage = LeadStage::where('is_default', true)->first() ?? LeadStage::first();
+        $stage = LeadStage::ensureDefault();
 
         Lead::create([
             'tenant_id' => auth()->user()->tenant_id,
-            'lead_stage_id' => $stage?->id,
+            'lead_stage_id' => $stage->id,
             'created_by' => auth()->id(),
             'assigned_to' => auth()->id(),
             'name' => 'Test Lead from '.$name,

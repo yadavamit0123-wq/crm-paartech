@@ -44,7 +44,7 @@ class Create extends Component
     public array $items = [];
     public string $productSearch = '';
     public string $doc_discount_type = 'percent';
-    public float $doc_discount_value = 0;
+    public ?float $doc_discount_value = 0;
     public array $additional_charges = [];
     public bool $showShipping = false;
     public string $shipping_address = '';
@@ -290,19 +290,28 @@ class Create extends Component
 
     public function updatedAttachmentUploads(): void
     {
-        foreach ($this->attachmentUploads as $file) {
-            if (! $file) {
-                continue;
+        try {
+            $this->validate([
+                'attachmentUploads.*' => 'file|max:10240',
+            ]);
+
+            foreach ($this->attachmentUploads as $file) {
+                if (! $file) {
+                    continue;
+                }
+                $path = $file->store('documents/attachments/'.auth()->user()->tenant_id, 'public');
+                $this->savedAttachments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'size' => $file->getSize(),
+                ];
             }
-            $path = $file->store('documents/attachments/'.auth()->user()->tenant_id, 'public');
-            $this->savedAttachments[] = [
-                'name' => $file->getClientOriginalName(),
-                'path' => $path,
-                'size' => $file->getSize(),
-            ];
+            $this->attachmentUploads = [];
+            $this->dispatch('notify', message: 'Attachment added');
+        } catch (\Throwable $e) {
+            $this->attachmentUploads = [];
+            $this->dispatch('notify', message: 'Attachment failed: max 10MB per file', type: 'error');
         }
-        $this->attachmentUploads = [];
-        $this->dispatch('notify', message: 'Attachment added');
     }
 
     public function removeAttachment(int $index): void
@@ -441,8 +450,9 @@ class Create extends Component
             $this->customer_state ?: null,
             [
                 'doc_discount_type' => $this->doc_discount_type,
-                'doc_discount_value' => $this->doc_discount_value,
+                'doc_discount_value' => $this->doc_discount_value ?? 0,
                 'additional_charges' => $this->additional_charges,
+                'currency' => $this->currency,
             ]
         );
     }
@@ -557,11 +567,16 @@ class Create extends Component
 
         if ($this->documentId) {
             $document = Document::findOrFail($this->documentId);
-
-            return $documentService->updateDocument($document, $payload, $items);
+            $document = $documentService->updateDocument($document, $payload, $items);
+        } else {
+            $document = $documentService->createDocument($payload, $items, auth()->user()->tenant);
         }
 
-        return $documentService->createDocument($payload, $items, auth()->user()->tenant);
+        // Prevent duplicate documents if the user clicks Save/Download again
+        $this->documentId = $document->id;
+        $this->document_number = $document->document_number;
+
+        return $document;
     }
 
     public function getLogoPreviewUrlProperty(): ?string
@@ -616,7 +631,7 @@ class Create extends Component
             'notes' => $this->notes ?: null,
             'terms_conditions' => $this->terms_conditions ?: null,
             'doc_discount_type' => $this->doc_discount_type,
-            'doc_discount_value' => $this->doc_discount_value,
+            'doc_discount_value' => $this->doc_discount_value ?? 0,
             'additional_charges' => $this->additional_charges,
             'advanced_options' => $this->advanced_options,
             'shipping_details' => $this->showShipping ? ['address' => $this->shipping_address] : null,

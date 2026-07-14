@@ -27,10 +27,10 @@
         </div>
         @endif
 
-        @if(count($errors) > 0)
+        @if(count($importErrors) > 0)
         <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
             <p class="font-semibold text-red-700 mb-2">Errors:</p>
-            @foreach($errors as $error)
+            @foreach($importErrors as $error)
             <p class="text-sm text-red-600">{{ $error }}</p>
             @endforeach
         </div>

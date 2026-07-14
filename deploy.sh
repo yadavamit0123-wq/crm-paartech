@@ -17,7 +17,9 @@ if command -v composer >/dev/null 2>&1; then
 elif [ -f composer.phar ]; then
     php composer.phar install --optimize-autoloader --no-dev --no-interaction
 else
-    echo "WARN: composer not found — vendor folder manually check karein"
+    echo "==> Downloading composer.phar..."
+    curl -sS https://getcomposer.org/installer | php
+    php composer.phar install --optimize-autoloader --no-dev --no-interaction
 fi
 
 # Laravel maintenance

@@ -6,6 +6,21 @@
         $currencySymbol = $currency === 'USD' ? '$' : '₹';
     @endphp
 
+    @if ($errors->any())
+    <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">
+        <p class="font-semibold mb-1">Please fix these before saving:</p>
+        <ul class="list-disc list-inside space-y-0.5">
+            @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
+    <div wire:loading.flex wire:target="save,saveAndPreview,saveAndDownload" class="fixed inset-0 z-40 bg-black/20 items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 px-6 py-4 rounded-xl shadow-lg text-sm font-medium">Saving document...</div>
+    </div>
+
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
             <a href="{{ route('leads.documents') }}" class="text-sm" style="color: {{ $accent }}">← Back to Quotes</a>

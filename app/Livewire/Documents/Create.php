@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Services\DocumentService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -452,7 +453,18 @@ class Create extends Component
             abort(403);
         }
 
-        $document = $this->persistDocument($documentService);
+        try {
+            $document = $this->persistDocument($documentService);
+        } catch (ValidationException $e) {
+            $this->dispatch('notify', message: 'Please fill required fields (client name + at least one item).', type: 'error');
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('notify', message: 'Save failed: '.$e->getMessage(), type: 'error');
+
+            return;
+        }
+
         session()->flash('success', $this->documentId ? 'Document updated successfully' : 'Document created successfully');
         $this->dispatch('notify', message: 'Document saved');
 
@@ -465,7 +477,18 @@ class Create extends Component
             abort(403);
         }
 
-        $document = $this->persistDocument($documentService);
+        try {
+            $document = $this->persistDocument($documentService);
+        } catch (ValidationException $e) {
+            $this->dispatch('notify', message: 'Please fill required fields before preview.', type: 'error');
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('notify', message: 'Save failed: '.$e->getMessage(), type: 'error');
+
+            return;
+        }
+
         session()->flash('success', 'Document saved — opening PDF preview');
         $this->dispatch('open-url', url: route('leads.documents.pdf', $document));
 
@@ -478,35 +501,67 @@ class Create extends Component
             abort(403);
         }
 
-        $document = $this->persistDocument($documentService);
+        try {
+            $document = $this->persistDocument($documentService);
+        } catch (ValidationException $e) {
+            $this->dispatch('notify', message: 'Please fill required fields before download.', type: 'error');
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('notify', message: 'Save failed: '.$e->getMessage(), type: 'error');
+
+            return;
+        }
+
         session()->flash('success', 'Document saved — downloading PDF');
 
         return redirect()->route('leads.documents.download', $document);
     }
 
+    protected function validatedItems(): array
+    {
+        $items = array_values(array_filter(
+            $this->items,
+            fn ($item) => filled(trim($item['description'] ?? ''))
+        ));
+
+        if (empty($items)) {
+            throw ValidationException::withMessages([
+                'items' => 'Add at least one line item with a name.',
+            ]);
+        }
+
+        return $items;
+    }
+
     protected function persistDocument(DocumentService $documentService): Document
     {
+        $items = $this->validatedItems();
+
         $this->validate([
             'type' => 'required|in:quotation,proforma,invoice',
             'customer_name' => 'required|string|max:255',
             'issue_date' => 'required|date',
-            'items' => 'required|array|min:1',
-            'items.*.description' => 'required|string|max:500',
-            'items.*.rate' => 'required|numeric|min:0',
             'document_number' => 'nullable|string|max:50',
             'exchange_rate' => 'nullable|numeric|min:0',
             'logoUpload' => 'nullable|image|max:5120',
         ]);
+
+        validator(['items' => $items], [
+            'items' => 'required|array|min:1',
+            'items.*.description' => 'required|string|max:500',
+            'items.*.rate' => 'required|numeric|min:0',
+        ])->validate();
 
         $payload = $this->buildPayload();
 
         if ($this->documentId) {
             $document = Document::findOrFail($this->documentId);
 
-            return $documentService->updateDocument($document, $payload, $this->items);
+            return $documentService->updateDocument($document, $payload, $items);
         }
 
-        return $documentService->createDocument($payload, $this->items, auth()->user()->tenant);
+        return $documentService->createDocument($payload, $items, auth()->user()->tenant);
     }
 
     public function getLogoPreviewUrlProperty(): ?string

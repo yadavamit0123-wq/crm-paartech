@@ -10,13 +10,14 @@
             $hidePlaceOfSupply = $opts['hide_place_of_supply'] ?? false;
             $showTaxSummary = $opts['show_tax_summary'] ?? true;
             $isGst = $document->is_gst_applicable;
-            $colCount = $isGst ? ($showTaxSummary ? 7 : 6) : 5;
+            $typeLabel = $document->typeLabel();
             $currency = $document->currency === 'USD' ? '$' : '₹';
+            $hasDiscountCol = true;
         @endphp
 
         @page {
             size: A4 portrait;
-            margin: 12mm 14mm 16mm 14mm;
+            margin: 28mm 12mm 20mm 12mm;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,295 +25,257 @@
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 10px;
-            color: #1f2937;
-            line-height: 1.45;
+            color: #374151;
+            line-height: 1.5;
         }
 
-        table { border-collapse: collapse; }
-        .w-full { width: 100%; }
-
-        /* Header */
-        .doc-header {
-            border-bottom: 2.5px solid {{ $themeColor }};
-            padding-bottom: 12px;
-            margin-bottom: 14px;
+        /* ── Repeating top bar (fixed = every page) ── */
+        .top-bar {
+            position: fixed;
+            top: -26mm;
+            left: 0;
+            right: 0;
+            height: 22mm;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 6px;
         }
-        .company-name {
-            font-size: 18px;
+        .top-bar table { width: 100%; border-collapse: collapse; }
+        .top-bar .lbl { font-size: 7px; color: #9ca3af; text-transform: capitalize; }
+        .top-bar .val { font-size: 9px; font-weight: bold; color: #111827; margin-top: 2px; }
+        .top-bar .disclaimer { font-size: 6.5px; color: #9ca3af; text-align: right; line-height: 1.3; }
+
+        /* ── Hero (page 1 only feel) ── */
+        .hero { margin-bottom: 16px; padding-top: 4px; }
+        .hero-title {
+            font-size: 28px;
             font-weight: bold;
             color: {{ $themeColor }};
-            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
         }
-        .company-meta { font-size: 9px; color: #4b5563; line-height: 1.5; }
-        .doc-title {
-            font-size: 16px;
+        .hero-project {
+            font-size: 14px;
             font-weight: bold;
-            text-transform: uppercase;
-            color: #111827;
-            text-align: right;
+            color: {{ $themeColor }};
+            margin-bottom: 10px;
         }
-        .doc-number { font-size: 11px; color: #6b7280; text-align: right; margin-top: 4px; }
-        .doc-subtitle { font-size: 10px; color: {{ $themeColor }}; text-align: right; margin-top: 3px; }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 8px;
-            font-weight: bold;
-            margin-top: 6px;
-        }
-        .badge-gst { background: #fef3c7; color: #92400e; }
-        .badge-nogst { background: #e0e7ff; color: #3730a3; }
-        .logo-img { max-height: 52px; max-width: 130px; margin-bottom: 6px; }
+        .hero-meta table { width: 100%; }
+        .hero-meta td { font-size: 9.5px; padding: 2px 0; vertical-align: top; }
+        .hero-meta .label { color: #6b7280; width: 110px; }
+        .hero-meta .value { color: #111827; font-weight: bold; }
 
-        /* Info boxes */
-        .info-table { width: 100%; margin-bottom: 14px; }
-        .info-box {
+        /* ── From / For ── */
+        .parties { width: 100%; margin-bottom: 16px; border-collapse: separate; border-spacing: 10px 0; }
+        .party-box {
             width: 48%;
             vertical-align: top;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            padding: 10px 12px;
+            padding: 0;
         }
-        .info-label {
-            font-size: 8px;
+        .party-title {
+            font-size: 11px;
             font-weight: bold;
-            text-transform: uppercase;
-            color: #9ca3af;
-            letter-spacing: 0.4px;
-            margin-bottom: 5px;
+            color: {{ $themeColor }};
+            margin-bottom: 8px;
         }
-        .info-box strong { font-size: 10px; color: #111827; }
-        .info-gap { width: 4%; }
+        .party-name { font-size: 11px; font-weight: bold; color: #111827; margin-bottom: 4px; }
+        .party-line { font-size: 9px; color: #4b5563; line-height: 1.55; }
 
-        .contact-box {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            padding: 8px 10px;
-            margin-bottom: 12px;
-            font-size: 9px;
-        }
-
-        /* Items table — header repeats on each page */
+        /* ── Items table ── */
         .items-table {
             width: 100%;
+            border-collapse: collapse;
             table-layout: fixed;
-            margin-bottom: 12px;
-            border: 1px solid #d1d5db;
+            margin-bottom: 0;
         }
         .items-table thead { display: table-header-group; }
-        .items-table tfoot { display: table-footer-group; }
         .items-table th {
             background: {{ $themeColor }};
             color: #ffffff;
-            font-size: 8.5px;
+            font-size: 8px;
             font-weight: bold;
-            padding: 7px 5px;
+            padding: 8px 6px;
             text-align: left;
-            border: 1px solid {{ $themeColor }};
+            border: none;
         }
-        .items-table th.right,
-        .items-table td.right { text-align: right; }
-        .items-table th.center,
-        .items-table td.center { text-align: center; }
+        .items-table th.right { text-align: right; }
         .items-table td {
-            padding: 7px 5px;
-            border: 1px solid #e5e7eb;
+            padding: 10px 6px;
+            border-bottom: 1px solid #f3f4f6;
             vertical-align: top;
             font-size: 9px;
             word-wrap: break-word;
-            word-break: break-word;
         }
-        .items-table tbody tr:nth-child(even) td { background: #f9fafb; }
         .items-table tbody tr { page-break-inside: avoid; }
-        .group-row td {
-            background: {{ $themeColor }}22 !important;
+        .item-num { font-weight: bold; color: #111827; font-size: 10px; }
+        .item-name { font-weight: bold; color: #111827; font-size: 10px; line-height: 1.4; }
+        .item-body { font-size: 8.5px; color: #4b5563; margin-top: 6px; line-height: 1.45; }
+        .item-body ul { margin: 4px 0 4px 14px; padding: 0; }
+        .item-body li { margin-bottom: 2px; }
+        .item-body p { margin-bottom: 3px; }
+        .group-label {
+            font-size: 9px;
             font-weight: bold;
+            color: {{ $themeColor }};
+            padding: 6px 0 4px;
+            border-bottom: 1px dashed #e5e7eb;
+            margin-bottom: 4px;
+        }
+        .col-item { width: 52%; }
+        .col-qty { width: 10%; }
+        .col-rate { width: 12%; }
+        .col-disc { width: 12%; }
+        .col-amt { width: 14%; }
+
+        /* ── Totals block (last page) ── */
+        .totals-wrap {
+            page-break-inside: avoid;
+            margin-top: 12px;
+            width: 100%;
+        }
+        .totals-wrap table { width: 100%; border-collapse: collapse; }
+        .words-cell {
+            vertical-align: top;
+            width: 55%;
+            padding-right: 16px;
             font-size: 9px;
             color: #374151;
-            padding: 5px 8px;
-            border: 1px solid #d1d5db;
         }
-        .item-title { font-weight: bold; font-size: 9.5px; color: #111827; }
-        .item-desc { font-size: 8px; color: #6b7280; margin-top: 3px; line-height: 1.35; }
-        .item-img {
-            width: 36px;
-            height: 36px;
-            object-fit: cover;
-            border: 1px solid #e5e7eb;
-            margin-right: 6px;
-            float: left;
-        }
-
-        .col-num { width: 4%; }
-        .col-desc { width: {{ $isGst ? '32%' : '40%' }}; }
-        .col-hsn { width: 9%; }
-        .col-qty { width: 10%; }
-        .col-rate { width: 11%; }
-        .col-tax { width: 14%; }
-        .col-amt { width: 12%; }
-
-        /* Totals — keep together */
-        .totals-section { page-break-inside: avoid; margin-top: 4px; }
-        .totals-table {
-            width: 260px;
-            margin-left: auto;
-            border: 1px solid #d1d5db;
-        }
-        .totals-table td {
+        .words-cell strong { color: #111827; }
+        .nums-cell { vertical-align: top; width: 45%; }
+        .nums-table { width: 100%; border-collapse: collapse; }
+        .nums-table td {
             padding: 5px 8px;
             font-size: 9px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #f3f4f6;
         }
-        .totals-table tr:last-child td { border-bottom: none; }
-        .totals-table .grand-total td {
-            background: {{ $themeColor }};
-            color: #ffffff;
-            font-size: 11px;
+        .nums-table td:first-child { color: #6b7280; text-align: left; }
+        .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; }
+        .nums-table .total-row td {
+            font-size: 12px;
             font-weight: bold;
-            padding: 8px;
+            color: {{ $themeColor }};
+            border-top: 2px solid {{ $themeColor }};
+            border-bottom: none;
+            padding-top: 8px;
         }
-        .amount-words {
-            margin-top: 8px;
-            font-size: 9px;
-            font-style: italic;
-            color: #6b7280;
-            text-align: right;
-            page-break-inside: avoid;
-        }
+        .nums-table .discount-row td { color: #dc2626; }
 
-        /* Footer blocks */
-        .footer-section { page-break-inside: avoid; margin-top: 16px; }
-        .bank-box {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            padding: 10px 12px;
-            font-size: 9px;
-            margin-bottom: 10px;
-        }
-        .terms-box {
+        /* ── Footer notes ── */
+        .footer-notes {
+            margin-top: 14px;
             font-size: 8.5px;
             color: #4b5563;
-            line-height: 1.5;
-            margin-bottom: 10px;
-        }
-        .signature-block {
+            line-height: 1.55;
             page-break-inside: avoid;
-            margin-top: 20px;
-            text-align: right;
         }
-        .signature-line {
-            border-top: 1px solid #9ca3af;
-            width: 180px;
-            margin-left: auto;
-            padding-top: 6px;
-            font-size: 9px;
-        }
-        .pdf-footer {
-            margin-top: 14px;
-            padding-top: 8px;
-            border-top: 1px solid #e5e7eb;
-            text-align: center;
-            font-size: 8px;
-            color: #9ca3af;
-        }
-        .page-num:after {
-            content: counter(page);
+        .bank-strip {
+            margin-top: 12px;
+            padding: 8px 10px;
+            background: #f9fafb;
+            border-left: 3px solid {{ $themeColor }};
+            font-size: 8.5px;
+            page-break-inside: avoid;
         }
     </style>
 </head>
 <body>
 
-    {{-- HEADER --}}
-    <div class="doc-header">
-        <table class="w-full">
+    {{-- ═══ REPEATING HEADER (every page) ═══ --}}
+    <div class="top-bar">
+        <table>
             <tr>
-                <td style="width:58%; vertical-align:top;">
-                    @if($document->logo_path && file_exists(public_path('storage/'.$document->logo_path)))
-                    <img src="{{ public_path('storage/'.$document->logo_path) }}" class="logo-img" alt="">
-                    @endif
-                    <div class="company-name">{{ $tenant->name }}</div>
-                    <div class="company-meta">
-                        @if($tenant->address){{ $tenant->address }}<br>@endif
-                        @if($tenant->city || $tenant->state || $tenant->pincode)
-                        {{ trim(implode(', ', array_filter([$tenant->city, $tenant->state]))) }}@if($tenant->pincode) - {{ $tenant->pincode }}@endif<br>
-                        @endif
-                        @if($tenant->gstin && $isGst)<strong>GSTIN:</strong> {{ $tenant->gstin }}<br>@endif
-                        @if($tenant->phone)Phone: {{ $tenant->phone }}@endif
-                        @if($tenant->email) | Email: {{ $tenant->email }}@endif
-                    </div>
+                <td style="width:22%; vertical-align:top;">
+                    <div class="lbl">{{ $typeLabel }} No</div>
+                    <div class="val">{{ $document->document_number }}</div>
                 </td>
-                <td style="width:42%; vertical-align:top;">
-                    <div class="doc-title">{{ $document->typeLabel() }}</div>
-                    <div class="doc-number">No. {{ $document->document_number }}</div>
-                    @if($document->title)<div class="doc-subtitle">{{ $document->title }}</div>@endif
-                    <div style="text-align:right;">
-                        @if($isGst)
-                        <span class="badge badge-gst">WITH GST</span>
-                        @else
-                        <span class="badge badge-nogst">WITHOUT GST</span>
-                        @endif
-                    </div>
+                <td style="width:22%; vertical-align:top;">
+                    <div class="lbl">{{ $typeLabel }} Date</div>
+                    <div class="val">{{ $document->issue_date->format('d M Y') }}</div>
+                </td>
+                <td style="width:28%; vertical-align:top;">
+                    <div class="lbl">{{ $typeLabel }} For</div>
+                    <div class="val">{{ $document->customer_name }}</div>
+                </td>
+                <td style="width:28%; vertical-align:top;" class="disclaimer">
+                    <span class="page-number"></span><br>
+                    This is an electronically generated document,<br>no signature is required.
                 </td>
             </tr>
         </table>
     </div>
 
-    @if($document->contact_details)
-    <div class="contact-box">
-        <strong>Contact:</strong>
-        {{ $document->contact_details['person'] ?? '' }}
-        @if($document->contact_details['phone'] ?? null) | {{ $document->contact_details['phone'] }} @endif
-        @if($document->contact_details['email'] ?? null) | {{ $document->contact_details['email'] }} @endif
-    </div>
-    @endif
-
-    {{-- BILL TO / DETAILS --}}
-    <table class="info-table">
-        <tr>
-            <td class="info-box">
-                <div class="info-label">Bill To</div>
-                <strong>{{ $document->customer_name }}</strong><br>
-                @if($document->customer_address)<span style="font-size:9px;">{{ $document->customer_address }}</span><br>@endif
-                @if($document->customer_phone)<span style="font-size:9px;">Phone: {{ $document->customer_phone }}</span><br>@endif
-                @if($document->customer_email)<span style="font-size:9px;">Email: {{ $document->customer_email }}</span><br>@endif
-                @if($document->customer_gstin && $isGst)<span style="font-size:9px;"><strong>GSTIN:</strong> {{ $document->customer_gstin }}</span>@endif
-            </td>
-            <td class="info-gap"></td>
-            <td class="info-box">
-                <div class="info-label">Document Details</div>
-                <table style="width:100%; font-size:9px;">
-                    <tr><td style="width:40%; padding:2px 0;"><strong>Issue Date</strong></td><td>{{ $document->issue_date->format('d M Y') }}</td></tr>
-                    @if($document->due_date)
-                    <tr><td style="padding:2px 0;"><strong>Due Date</strong></td><td>{{ $document->due_date->format('d M Y') }}</td></tr>
-                    @endif
+    {{-- ═══ HERO TITLE ═══ --}}
+    <div class="hero">
+        <div class="hero-title">{{ $typeLabel }}</div>
+        @if($document->title)
+        <div class="hero-project">{{ $document->title }}</div>
+        @endif
+        <div class="hero-meta">
+            <table>
+                <tr>
+                    <td class="label">{{ $typeLabel }} No #</td>
+                    <td class="value">{{ $document->document_number }}</td>
+                    <td style="width:30px;"></td>
+                    <td class="label">{{ $typeLabel }} Date</td>
+                    <td class="value">{{ $document->issue_date->format('M d, Y') }}</td>
+                </tr>
+                @if($document->due_date)
+                <tr>
+                    <td class="label">Due Date</td>
+                    <td class="value">{{ $document->due_date->format('M d, Y') }}</td>
                     @if($document->valid_until)
-                    <tr><td style="padding:2px 0;"><strong>Valid Until</strong></td><td>{{ $document->valid_until->format('d M Y') }}</td></tr>
+                    <td></td>
+                    <td class="label">Valid Until</td>
+                    <td class="value">{{ $document->valid_until->format('M d, Y') }}</td>
                     @endif
-                    @if(!$hidePlaceOfSupply)
-                    <tr><td style="padding:2px 0;"><strong>Place of Supply</strong></td><td>{{ $document->place_of_supply ?? $tenant->state }}</td></tr>
+                </tr>
+                @endif
+            </table>
+        </div>
+    </div>
+
+    {{-- ═══ FROM / FOR ═══ --}}
+    <table class="parties">
+        <tr>
+            <td class="party-box">
+                <div class="party-title">{{ $typeLabel }} From</div>
+                @if($document->logo_path && file_exists(public_path('storage/'.$document->logo_path)))
+                <img src="{{ public_path('storage/'.$document->logo_path) }}" style="max-height:44px;max-width:120px;margin-bottom:6px;" alt="">
+                @endif
+                <div class="party-name">{{ $tenant->name }}</div>
+                <div class="party-line">
+                    @if($tenant->address){{ $tenant->address }},<br>@endif
+                    @if($tenant->city || $tenant->state)
+                    {{ trim(implode(', ', array_filter([$tenant->city, $tenant->state]))) }}@if($tenant->pincode), India - {{ $tenant->pincode }}@endif<br>
                     @endif
-                </table>
+                    @if($tenant->email)Email: {{ $tenant->email }}<br>@endif
+                    @if($tenant->phone)Phone: {{ $tenant->phone }}@endif
+                    @if($tenant->gstin && $isGst)<br>GSTIN: {{ $tenant->gstin }}@endif
+                </div>
+            </td>
+            <td style="width:4%;"></td>
+            <td class="party-box">
+                <div class="party-title">{{ $typeLabel }} For</div>
+                <div class="party-name">{{ $document->customer_name }}</div>
+                <div class="party-line">
+                    @if($document->customer_address){{ $document->customer_address }}<br>@endif
+                    @if($document->customer_state){{ $document->customer_state }}@if($document->customer_gstin && $isGst), @endif @endif
+                    @if($document->customer_gstin && $isGst)GSTIN: {{ $document->customer_gstin }}<br>@endif
+                    @if($document->customer_email)Email: {{ $document->customer_email }}<br>@endif
+                    @if($document->customer_phone)Phone: {{ $document->customer_phone }}@endif
+                </div>
             </td>
         </tr>
     </table>
 
-    @if($document->shipping_details && !empty($document->shipping_details['address']))
-    <div style="margin-bottom:12px; padding:8px 10px; background:#fffbeb; border:1px solid #fde68a; font-size:9px;">
-        <strong>Ship To:</strong> {{ $document->shipping_details['address'] }}
-    </div>
-    @endif
-
-    {{-- LINE ITEMS (auto page break + header repeat) --}}
+    {{-- ═══ LINE ITEMS ═══ --}}
     <table class="items-table">
         <thead>
             <tr>
-                <th class="col-num center">#</th>
-                <th class="col-desc">Description</th>
-                @if($isGst)<th class="col-hsn center">HSN/SAC</th>@endif
-                <th class="col-qty right">Qty</th>
+                <th class="col-item">Item</th>
+                <th class="col-qty right">Quantity</th>
                 <th class="col-rate right">Rate</th>
-                @if($isGst && $showTaxSummary)<th class="col-tax right">Tax</th>@endif
+                @if($hasDiscountCol)<th class="col-disc right">Discount</th>@endif
                 <th class="col-amt right">Amount</th>
             </tr>
         </thead>
@@ -320,109 +283,124 @@
             @php $prevGroup = ''; $rowNum = 0; @endphp
             @foreach($items as $item)
             @if($item->group_name && $item->group_name !== $prevGroup)
-            <tr class="group-row">
-                <td colspan="{{ $colCount }}">{{ $item->group_name }}</td>
+            <tr>
+                <td colspan="{{ $hasDiscountCol ? 5 : 4 }}">
+                    <div class="group-label">{{ $item->group_name }}</div>
+                </td>
             </tr>
             @php $prevGroup = $item->group_name; @endphp
             @endif
-            @php $rowNum++; @endphp
+            @php
+                $rowNum++;
+                $gross = $item->quantity * $item->rate;
+                $disc = $item->discount_amount > 0 ? $item->discount_amount : 0;
+            @endphp
             <tr>
-                <td class="center">{{ $rowNum }}</td>
                 <td>
-                    @if($item->image_path && file_exists(public_path('storage/'.$item->image_path)))
-                    <img src="{{ public_path('storage/'.$item->image_path) }}" class="item-img" alt="">
-                    @endif
-                    <div class="item-title">{{ $item->description }}</div>
+                    <div class="item-name">{{ $rowNum }}. {{ $item->description }}</div>
                     @if($item->long_description)
-                    <div class="item-desc">{!! strip_tags($item->long_description, '<br><b><strong><i><em><ul><ol><li><p>') !!}</div>
+                    <div class="item-body">{!! strip_tags($item->long_description, '<br><b><strong><i><em><ul><ol><li><p>') !!}</div>
+                    @endif
+                    @if($isGst && $item->hsn_sac)
+                    <div style="font-size:7.5px;color:#9ca3af;margin-top:4px;">HSN/SAC: {{ $item->hsn_sac }}@if($showTaxSummary && $item->gst_rate) | GST {{ $item->gst_rate }}%@endif</div>
                     @endif
                 </td>
-                @if($isGst)<td class="center" style="font-size:8px;">{{ $item->hsn_sac }}</td>@endif
-                <td class="right">{{ number_format($item->quantity, 2) }}<br><span style="font-size:7px;color:#9ca3af;">{{ $item->unit }}</span></td>
-                <td class="right">{{ $currency }}{{ number_format($item->rate, 2) }}</td>
-                @if($isGst && $showTaxSummary)
-                <td class="right" style="font-size:8px;">
-                    @if($item->igst_amount > 0)
-                        IGST {{ number_format($item->igst_rate, 1) }}%<br>{{ $currency }}{{ number_format($item->igst_amount, 2) }}
+                <td class="right" style="vertical-align:top;padding-top:12px;">
+                    {{ number_format($item->quantity, 0) == $item->quantity ? number_format($item->quantity, 0) : number_format($item->quantity, 2) }}
+                    @if($item->unit && $item->unit !== 'Nos')<br><span style="font-size:7px;color:#9ca3af;">{{ $item->unit }}</span>@endif
+                </td>
+                <td class="right" style="vertical-align:top;padding-top:12px;">{{ $currency }}{{ number_format($item->rate, 0) == $item->rate ? number_format($item->rate, 0) : number_format($item->rate, 2) }}</td>
+                @if($hasDiscountCol)
+                <td class="right" style="vertical-align:top;padding-top:12px;">
+                    @if($disc > 0)
+                        {{ $currency }}{{ number_format($disc, 2) }}
                     @else
-                        CGST {{ number_format($item->cgst_rate, 1) }}%<br>SGST {{ number_format($item->sgst_rate, 1) }}%
+                        {{ $currency }}0
                     @endif
                 </td>
                 @endif
-                <td class="right"><strong>{{ $currency }}{{ number_format($item->line_total, 2) }}</strong></td>
+                <td class="right" style="vertical-align:top;padding-top:12px;font-weight:bold;">{{ $currency }}{{ number_format($item->line_total, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
 
-    {{-- TOTALS --}}
-    <div class="totals-section">
-        <table class="totals-table">
-            <tr><td>Subtotal</td><td class="right">{{ $currency }} {{ number_format($document->subtotal, 2) }}</td></tr>
-            @if($document->discount_amount > 0)
-            <tr><td>Discount</td><td class="right">- {{ $currency }} {{ number_format($document->discount_amount, 2) }}</td></tr>
-            @endif
-            <tr><td>Taxable Amount</td><td class="right">{{ $currency }} {{ number_format($document->taxable_amount, 2) }}</td></tr>
-            @if($isGst && $showTaxSummary)
-                @if($document->cgst_amount > 0)
-                <tr><td>CGST</td><td class="right">{{ $currency }} {{ number_format($document->cgst_amount, 2) }}</td></tr>
-                <tr><td>SGST</td><td class="right">{{ $currency }} {{ number_format($document->sgst_amount, 2) }}</td></tr>
-                @endif
-                @if($document->igst_amount > 0)
-                <tr><td>IGST</td><td class="right">{{ $currency }} {{ number_format($document->igst_amount, 2) }}</td></tr>
-                @endif
-            @endif
-            <tr class="grand-total">
-                <td>Grand Total</td>
-                <td class="right">{{ $currency }} {{ number_format($document->grand_total, 2) }}</td>
+    {{-- ═══ TOTALS (reference style: words left, numbers right) ═══ --}}
+    <div class="totals-wrap">
+        <table>
+            <tr>
+                <td class="words-cell">
+                    @if($document->total_in_words)
+                    <strong>Total (in words):</strong> {{ strtoupper($document->total_in_words) }}
+                    @endif
+                </td>
+                <td class="nums-cell">
+                    <table class="nums-table">
+                        <tr><td>Sub Total</td><td>{{ $currency }}{{ number_format($document->subtotal, 2) }}</td></tr>
+                        @if($document->discount_amount > 0)
+                        <tr class="discount-row"><td>Discount</td><td>({{ $currency }}{{ number_format($document->discount_amount, 2) }})</td></tr>
+                        @endif
+                        @if($isGst && $showTaxSummary && $document->total_tax > 0)
+                        <tr><td>Tax (GST)</td><td>{{ $currency }}{{ number_format($document->total_tax, 2) }}</td></tr>
+                        @endif
+                        @if(!$hidePlaceOfSupply && $document->place_of_supply)
+                        <tr><td>Place of Supply</td><td>{{ $document->place_of_supply }}</td></tr>
+                        @endif
+                        <tr class="total-row">
+                            <td>Total ({{ $document->currency ?? 'INR' }})</td>
+                            <td>{{ $currency }}{{ number_format($document->grand_total, 2) }}</td>
+                        </tr>
+                        @if($document->exchange_rate && $document->exchange_rate > 0)
+                        <tr><td>USD Equivalent</td><td>$ {{ number_format($document->grand_total / $document->exchange_rate, 2) }}</td></tr>
+                        @endif
+                    </table>
+                </td>
             </tr>
-            @if($document->exchange_rate && $document->exchange_rate > 0)
-            <tr><td>USD Equivalent</td><td class="right">$ {{ number_format($document->grand_total / $document->exchange_rate, 2) }}</td></tr>
-            @endif
         </table>
-        @if($document->total_in_words)
-        <div class="amount-words">Amount in words: {{ $document->total_in_words }}</div>
-        @endif
     </div>
 
+    {{-- Terms & Notes --}}
+    @if($document->terms_conditions)
+    <div class="footer-notes">
+        {!! nl2br(e($document->terms_conditions)) !!}
+    </div>
+    @endif
+
     @if($document->additional_info)
-    <div style="margin-top:12px; padding:8px 10px; background:#f9fafb; border:1px solid #e5e7eb; font-size:9px; page-break-inside:avoid;">
+    <div class="footer-notes" style="margin-top:8px;">
         <strong>Additional Info:</strong> {{ $document->additional_info }}
     </div>
     @endif
 
-    @if($document->notes)
-    <div style="margin-top:10px; font-size:9px; page-break-inside:avoid;">
-        <strong>Notes:</strong> {{ $document->notes }}
-    </div>
-    @endif
-
     @if($document->signature_data)
-    <div class="signature-block">
-        <div class="signature-line">
+    <div style="margin-top:20px;text-align:right;page-break-inside:avoid;">
+        <div style="display:inline-block;text-align:left;border-top:1px solid #d1d5db;padding-top:6px;min-width:160px;">
             <strong>{{ $document->signature_data['name'] ?? '' }}</strong><br>
-            {{ $document->signature_data['title'] ?? '' }}<br>
-            <span style="font-size:8px;color:#9ca3af;">Authorized Signatory</span>
+            <span style="font-size:8px;color:#6b7280;">{{ $document->signature_data['title'] ?? '' }}</span>
         </div>
     </div>
     @endif
 
-    <div class="footer-section">
-        <div class="bank-box">
-            <strong>Bank Details</strong><br>
-            Bank: {{ $bank['bank_name'] }} &nbsp;|&nbsp; A/C: {{ $bank['account_number'] }} &nbsp;|&nbsp; IFSC: {{ $bank['ifsc'] }}<br>
-            UPI: {{ $bank['upi_id'] }}
-        </div>
-        @if($document->terms_conditions)
-        <div class="terms-box">
-            <strong>Terms &amp; Conditions</strong><br>
-            {!! nl2br(e($document->terms_conditions)) !!}
-        </div>
-        @endif
-        <div class="pdf-footer">
-            This is a computer-generated document. | {{ $tenant->name }} | {{ $document->document_number }}
-        </div>
+    <div class="bank-strip">
+        <strong>Bank Details:</strong>
+        {{ $bank['bank_name'] }} | A/C: {{ $bank['account_number'] }} | IFSC: {{ $bank['ifsc'] }} | UPI: {{ $bank['upi_id'] }}
     </div>
+
+    {{-- Page numbers --}}
+    <script type="text/php">
+        if (isset($pdf)) {
+            $font = $fontMetrics->getFont('DejaVu Sans', 'normal');
+            $fontBold = $fontMetrics->getFont('DejaVu Sans', 'bold');
+            $size = 7;
+            $color = array(0.55, 0.55, 0.55);
+
+            $pdf->page_script('
+                $font = $fontMetrics->getFont("DejaVu Sans", "normal");
+                $text = "Page " . $PAGE_NUM . " of " . $PAGE_COUNT;
+                $pdf->text(480, 42, $text, $font, 7, array(0.45, 0.45, 0.45));
+            ');
+        }
+    </script>
 
 </body>
 </html>

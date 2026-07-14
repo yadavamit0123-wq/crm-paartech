@@ -348,14 +348,18 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg">
             <h3 class="font-semibold mb-4">Edit Lead</h3>
             <div class="space-y-3">
-                <input type="text" wire:model="editName" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="Name">
+                <input type="text" wire:model="editName" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="Name *">
+                @error('editName') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                 <input type="email" wire:model="editEmail" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="Email">
+                @error('editEmail') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                 <input type="text" wire:model="editPhone" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="Phone">
+                @error('editPhone') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                 <input type="text" wire:model="editCompany" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="Company">
                 <input type="text" wire:model="editServiceType" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="Service Type">
                 <select wire:model="editStageId" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                     @foreach($stages as $stage)<option value="{{ $stage->id }}">{{ $stage->name }}</option>@endforeach
                 </select>
+                @error('editStageId') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                 <select wire:model="editLabelId" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                     <option value="">No label</option>
                     @foreach($labels as $lbl)<option value="{{ $lbl->id }}">{{ $lbl->name }}</option>@endforeach

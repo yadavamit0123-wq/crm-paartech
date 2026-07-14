@@ -14,7 +14,9 @@ use App\Models\LeadTask;
 use App\Models\User;
 use App\Services\CustomerService;
 use App\Services\ReviewRequestService;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Throwable;
 use Livewire\WithFileUploads;
 
 class Show extends Component
@@ -349,32 +351,54 @@ class Show extends Component
     public function updateLead(): void
     {
         if (! auth()->user()->hasPermission('leads.edit')) {
+            $this->dispatch('notify', message: 'Edit permission nahi hai', type: 'error');
+
             return;
         }
 
-        $oldStage = $this->lead->stage?->name;
-
-        $this->lead->update([
-            'name' => $this->editName,
-            'email' => $this->editEmail,
-            'phone' => $this->editPhone,
-            'company' => $this->editCompany,
-            'lead_stage_id' => $this->editStageId,
-            'lead_label_id' => $this->editLabelId,
-            'assigned_to' => $this->editAssignedTo,
-            'service_type' => $this->editServiceType ?: null,
-        ]);
-
-        $newStage = LeadStage::find($this->editStageId)?->name;
-        if ($oldStage !== $newStage) {
-            $this->lead->logActivity('stage_change', "Status: {$oldStage} → {$newStage}");
-        } else {
-            $this->lead->logActivity('updated', 'Lead info updated');
+        if (! $this->editStageId) {
+            $this->editStageId = LeadStage::ensureDefault()->id;
         }
 
-        $this->showEditModal = false;
-        $this->lead->refresh();
-        $this->dispatch('notify', message: 'Lead updated');
+        $this->validate([
+            'editName' => 'required|string|max:255',
+            'editEmail' => 'nullable|email|max:255',
+            'editPhone' => 'nullable|string|max:20',
+            'editStageId' => [
+                'required',
+                Rule::exists('lead_stages', 'id')->where('tenant_id', auth()->user()->tenant_id),
+            ],
+            'editAssignedTo' => 'nullable|exists:users,id',
+        ]);
+
+        try {
+            $oldStage = $this->lead->stage?->name;
+
+            $this->lead->update([
+                'name' => $this->editName,
+                'email' => $this->editEmail ?: null,
+                'phone' => $this->editPhone ?: null,
+                'company' => $this->editCompany ?: null,
+                'lead_stage_id' => $this->editStageId,
+                'lead_label_id' => $this->editLabelId ?: null,
+                'assigned_to' => $this->editAssignedTo,
+                'service_type' => $this->editServiceType ?: null,
+            ]);
+
+            $newStage = LeadStage::find($this->editStageId)?->name;
+            if ($oldStage !== $newStage) {
+                $this->lead->logActivity('stage_change', "Status: {$oldStage} → {$newStage}");
+            } else {
+                $this->lead->logActivity('updated', 'Lead info updated');
+            }
+
+            $this->showEditModal = false;
+            $this->lead->refresh();
+            $this->dispatch('notify', message: 'Lead updated');
+        } catch (Throwable $e) {
+            report($e);
+            $this->dispatch('notify', message: 'Lead save nahi ho paya', type: 'error');
+        }
     }
 
     public function deleteLead(): void

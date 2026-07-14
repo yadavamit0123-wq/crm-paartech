@@ -1,7 +1,5 @@
 ---
-# cPanel Git auto-deploy — Push ke baad ye tasks automatic chalti hain.
-# Repo path: /home/paartech/crm.paartech.in
-
 deployment:
   tasks:
+    - export DEPLOYPATH=/home/paartech/crm.paartech.in
     - /bin/bash /home/paartech/crm.paartech.in/deploy.sh

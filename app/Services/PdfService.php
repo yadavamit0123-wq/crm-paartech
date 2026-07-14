@@ -14,12 +14,21 @@ class PdfService
     {
         $document->load(['items', 'customer', 'tenant']);
 
-        return Pdf::loadView('pdf.document', [
+        $pdf = Pdf::loadView('pdf.document', [
             'document' => $document,
             'tenant' => $document->tenant,
             'items' => $document->items,
             'bank' => $this->bankDetails($document->tenant),
-        ])->setPaper('a4');
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isPhpEnabled', false);
+        $pdf->setOption('defaultFont', 'DejaVu Sans');
+        $pdf->setOption('dpi', 120);
+        $pdf->setOption('enable_font_subsetting', true);
+
+        return $pdf;
     }
 
     public function download(Document $document)

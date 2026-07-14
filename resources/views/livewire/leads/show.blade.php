@@ -65,7 +65,7 @@
         @foreach([
             'timeline' => 'Timeline ('.$timeline->count().')',
             'task' => 'Task ('.$openTasks->count().')',
-            'notes' => 'Notes ('.$lead->notes->count().')',
+            'notes' => 'Notes ('.$lead->leadNotes->count().')',
             'info' => 'Info',
             'chat' => 'Chat',
             'forward' => 'Forward',
@@ -159,10 +159,10 @@
                     <button wire:click="addNote" class="px-4 py-2 bg-yellow-400 text-gray-800 rounded-lg">Add</button>
                 </div>
                 <div class="grid md:grid-cols-2 gap-3">
-                    @foreach($lead->notes as $note)
+                    @foreach($lead->leadNotes as $note)
                     <div class="p-4 rounded-lg" style="background:{{ $note->color }}">
                         <p class="text-sm">{{ $note->content }}</p>
-                        <p class="text-xs text-gray-600 mt-2">{{ $note->user->name }} • {{ $note->created_at->diffForHumans() }}</p>
+                        <p class="text-xs text-gray-600 mt-2">{{ $note->user?->name ?? 'System' }} • {{ $note->created_at->diffForHumans() }}</p>
                     </div>
                     @endforeach
                 </div>

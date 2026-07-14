@@ -69,7 +69,9 @@ class Lead extends Model
         return $this->hasMany(LeadNote::class)->where('is_sticky', true);
     }
 
-    public function notes(): HasMany
+    // NOTE: naam leadNotes hai kyunki leads table me 'notes' text column already hai —
+    // same naam ki relation attribute se clash karti hai ($lead->notes column return karta hai)
+    public function leadNotes(): HasMany
     {
         return $this->hasMany(LeadNote::class);
     }

@@ -72,7 +72,7 @@ class Show extends Component
 
         $this->lead = $lead->load([
             'stage', 'label', 'assignee', 'customer',
-            'activities.user', 'notes.user', 'reminders', 'recordings',
+            'activities.user', 'leadNotes.user', 'reminders', 'recordings',
             'chatMessages.user', 'forwards.fromUser', 'forwards.toUser', 'tasks.assignee',
         ]);
 

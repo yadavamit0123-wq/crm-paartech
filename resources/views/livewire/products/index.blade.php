@@ -8,7 +8,7 @@
         </div>
         <div class="flex flex-wrap gap-2">
             <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search products..." class="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
-            <a href="{{ route('leads.bulk-upload') }}" class="px-3 py-2 border rounded-lg text-sm">📤 Bulk Import</a>
+            <button wire:click="openImport" class="px-3 py-2 border rounded-lg text-sm">📤 Bulk Import</button>
             <select wire:model.live="filterCategory" class="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
                 <option value="">Filter</option>
                 @foreach($categories as $cat)<option value="{{ $cat }}">{{ $cat }}</option>@endforeach
@@ -62,6 +62,31 @@
             <textarea wire:model="description" rows="2" placeholder="Description" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"></textarea>
             <input type="file" wire:model="image" accept="image/*" class="text-sm">
             <div class="flex gap-2"><button wire:click="save" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg">Save</button><button wire:click="$set('showModal', false)" class="flex-1 py-2 border rounded-lg">Cancel</button></div>
+        </div>
+    </div>
+    @endif
+
+    @if($showImportModal)
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg space-y-3 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold">Bulk Import Products</h3>
+            <p class="text-sm text-gray-500">Upload a CSV with headers: <code class="text-xs">name, sku, price, gst_rate, hsn_sac, category, unit, description</code></p>
+            <input type="file" wire:model="importFile" accept=".csv,.txt" class="text-sm">
+            @error('importFile')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+            @if($importedCount > 0)
+            <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm text-green-700 dark:text-green-400">{{ $importedCount }} products imported</div>
+            @endif
+            @if(count($importErrors))
+            <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg max-h-40 overflow-y-auto">
+                @foreach($importErrors as $err)
+                <p class="text-xs text-red-600 dark:text-red-400">{{ $err }}</p>
+                @endforeach
+            </div>
+            @endif
+            <div class="flex gap-2">
+                <button wire:click="import" wire:loading.attr="disabled" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg">Import</button>
+                <button wire:click="$set('showImportModal', false)" class="flex-1 py-2 border rounded-lg">Close</button>
+            </div>
         </div>
     </div>
     @endif

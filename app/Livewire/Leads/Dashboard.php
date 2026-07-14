@@ -19,6 +19,18 @@ class Dashboard extends Component
     public string $dateRange = 'last_7_days';
     public string $teamMember = '';
 
+    public function toggleDailyReports(): void
+    {
+        $tenant = auth()->user()->tenant;
+        $settings = $tenant->settings ?? [];
+        $settings['daily_email_reports'] = empty($settings['daily_email_reports']);
+        $tenant->update(['settings' => $settings]);
+
+        $this->dispatch('notify', message: $settings['daily_email_reports']
+            ? 'Daily email reports enabled'
+            : 'Daily email reports disabled');
+    }
+
     public function getDateBounds(): array
     {
         return match ($this->dateRange) {

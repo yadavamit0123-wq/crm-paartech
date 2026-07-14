@@ -13,9 +13,9 @@
 
         <div class="grid md:grid-cols-3 gap-4 mb-8">
             @foreach([
-                ['name' => 'WhatsApp', 'icon' => '💬', 'color' => 'green', 'connected' => $whatsappConnected],
-                ['name' => 'Instagram', 'icon' => '📸', 'color' => 'pink', 'connected' => false],
-                ['name' => 'Messenger', 'icon' => '💭', 'color' => 'blue', 'connected' => false],
+                ['name' => 'WhatsApp', 'key' => 'whatsapp', 'icon' => '💬', 'color' => 'green', 'connected' => $whatsappConnected],
+                ['name' => 'Instagram', 'key' => 'instagram', 'icon' => '📸', 'color' => 'pink', 'connected' => $instagramConnected],
+                ['name' => 'Messenger', 'key' => 'messenger', 'icon' => '💭', 'color' => 'blue', 'connected' => $messengerConnected],
             ] as $channel)
             <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border dark:border-gray-700 shadow-sm">
                 <div class="text-3xl mb-3">{{ $channel['icon'] }}</div>
@@ -23,7 +23,7 @@
                 @if($channel['connected'])
                 <span class="inline-flex items-center gap-1 text-xs text-green-600 mt-2">✓ Connected</span>
                 @else
-                <button wire:click="connectWhatsapp" class="mt-3 px-4 py-2 bg-{{ $channel['color'] }}-600 text-white rounded-lg text-sm">Connect {{ $channel['name'] }}</button>
+                <button wire:click="connectChannel('{{ $channel['key'] }}')" class="mt-3 px-4 py-2 bg-{{ $channel['color'] }}-600 text-white rounded-lg text-sm">Connect {{ $channel['name'] }}</button>
                 @endif
             </div>
             @endforeach

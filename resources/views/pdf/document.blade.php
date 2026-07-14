@@ -327,8 +327,10 @@
                 <td class="right" style="vertical-align:top;padding-top:12px;">{{ $currency }}{{ number_format($item->rate, 0) == $item->rate ? number_format($item->rate, 0) : number_format($item->rate, 2) }}</td>
                 @if($hasDiscountCol)
                 <td class="right" style="vertical-align:top;padding-top:12px;">
-                    @if($disc > 0)
-                        {{ $currency }}{{ number_format($disc, 2) }}
+                    @if(($item->discount_type ?? 'fixed') === 'percent')
+                        {{ number_format($item->discount_percent, 0) == $item->discount_percent ? number_format($item->discount_percent, 0) : number_format($item->discount_percent, 2) }}%
+                    @elseif($disc > 0)
+                        {{ $currency }}{{ number_format($disc, 0) == $disc ? number_format($disc, 0) : number_format($disc, 2) }}
                     @else
                         {{ $currency }}0
                     @endif

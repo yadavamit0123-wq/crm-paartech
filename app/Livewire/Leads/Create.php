@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Leads;
 
+use App\Models\CustomField;
 use App\Models\Lead;
 use App\Models\LeadStage;
 use App\Models\User;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Throwable;
@@ -28,6 +30,7 @@ class Create extends Component
     public string $website = '';
     public ?int $lead_stage_id = null;
     public ?int $assigned_to = null;
+    public array $customFieldValues = [];
 
     public function mount(): void
     {
@@ -35,9 +38,18 @@ class Create extends Component
         $this->assigned_to = auth()->id();
     }
 
+    protected function customFields()
+    {
+        if (! Schema::hasTable('custom_fields')) {
+            return collect();
+        }
+
+        return CustomField::where('entity_type', 'lead')->orderBy('sort_order')->get();
+    }
+
     protected function rules(): array
     {
-        return [
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
@@ -49,6 +61,22 @@ class Create extends Component
             'priority' => 'in:low,medium,high,urgent',
             'source' => 'required|string|max:50',
         ];
+
+        foreach ($this->customFields() as $field) {
+            $rules["customFieldValues.{$field->field_key}"] = $field->is_required ? 'required' : 'nullable';
+        }
+
+        return $rules;
+    }
+
+    protected function validationAttributes(): array
+    {
+        $attributes = [];
+        foreach ($this->customFields() as $field) {
+            $attributes["customFieldValues.{$field->field_key}"] = $field->label;
+        }
+
+        return $attributes;
     }
 
     public function save()
@@ -66,12 +94,17 @@ class Create extends Component
         $this->validate();
 
         try {
+            $customFields = collect($this->customFieldValues)
+                ->filter(fn ($value) => $value !== null && $value !== '')
+                ->all();
+
             $lead = Lead::create([
                 ...$this->only([
                     'name', 'email', 'phone', 'alternate_phone', 'company', 'designation',
                     'source', 'campaign', 'city', 'state', 'address', 'value', 'priority',
                     'notes', 'website', 'lead_stage_id', 'assigned_to',
                 ]),
+                'custom_fields' => $customFields ?: null,
                 'tenant_id' => auth()->user()->tenant_id,
                 'created_by' => auth()->id(),
             ]);
@@ -91,8 +124,9 @@ class Create extends Component
     {
         $stages = LeadStage::orderBy('sort_order')->get();
         $employees = User::where('tenant_id', auth()->user()->tenant_id)->where('is_active', true)->get();
+        $customFields = $this->customFields();
 
-        return view('livewire.leads.create', compact('stages', 'employees'))
+        return view('livewire.leads.create', compact('stages', 'employees', 'customFields'))
             ->layout('layouts.app');
     }
 }

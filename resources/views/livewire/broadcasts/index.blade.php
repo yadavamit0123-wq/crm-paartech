@@ -50,7 +50,7 @@
                 <td class="px-4 py-3">{{ ucfirst($b->channel) }}</td>
                 <td class="px-4 py-3">{{ $b->total_recipients }}</td>
                 <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-xs bg-gray-100">{{ ucfirst($b->status) }}</span></td>
-                <td class="px-4 py-3">{{ $b->delivered_count }} / {{ $b->opened_count }} opened</td>
+                <td class="px-4 py-3">{{ $b->delivered_count }} / {{ $b->opened_count > 0 ? $b->opened_count : '—' }} opened</td>
                 <td class="px-4 py-3">@if($b->status !== 'sent')<button wire:click="sendNow({{ $b->id }})" wire:confirm="Send now?" class="text-indigo-600 text-sm">Send Now</button>@endif</td>
             </tr>
             @empty

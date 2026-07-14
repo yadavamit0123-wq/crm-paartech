@@ -67,9 +67,9 @@ class Index extends Component
             'status' => 'sent',
             'sent_at' => now(),
             'delivered_count' => $broadcast->total_recipients,
-            'opened_count' => (int) ($broadcast->total_recipients * 0.65),
+            'opened_count' => 0,
         ]);
-        $this->dispatch('notify', message: 'Broadcast sent to '.$broadcast->total_recipients.' leads');
+        $this->dispatch('notify', message: 'Broadcast queued (simulated send) — '.$broadcast->total_recipients.' recipients');
     }
 
     public function render()

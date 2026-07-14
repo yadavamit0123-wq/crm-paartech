@@ -81,20 +81,31 @@ class Index extends Component
         }
     }
 
-    public function connectWhatsapp(): void
+    public function connectChannel(string $channel): void
     {
+        if (! in_array($channel, ['whatsapp', 'instagram', 'messenger'])) {
+            return;
+        }
+
         $tenant = auth()->user()->tenant;
         $settings = $tenant->settings ?? [];
-        $settings['whatsapp_connected'] = true;
+        $settings["{$channel}_connected"] = true;
         $tenant->update(['settings' => $settings]);
-        $this->view = 'inbox';
-        $this->dispatch('notify', message: 'WhatsApp Business API connected');
+
+        if ($channel === 'whatsapp') {
+            $this->view = 'inbox';
+            $this->dispatch('notify', message: 'WhatsApp Business API connected');
+        } else {
+            $this->dispatch('notify', message: ucfirst($channel).' connected');
+        }
     }
 
     public function render()
     {
         $tenant = auth()->user()->tenant;
         $whatsappConnected = ! empty($tenant->settings['whatsapp_connected']);
+        $instagramConnected = ! empty($tenant->settings['instagram_connected']);
+        $messengerConnected = ! empty($tenant->settings['messenger_connected']);
 
         $conversations = WhatsappConversation::with(['lead', 'assignee'])
             ->when($this->search, fn ($q) => $q->where(function ($q) {
@@ -109,7 +120,7 @@ class Index extends Component
             ? WhatsappConversation::with(['messages.user', 'lead', 'assignee'])->find($this->activeConversationId)
             : null;
 
-        return view('livewire.inbox.index', compact('conversations', 'active', 'whatsappConnected'))
+        return view('livewire.inbox.index', compact('conversations', 'active', 'whatsappConnected', 'instagramConnected', 'messengerConnected'))
             ->layout('layouts.app');
     }
 }

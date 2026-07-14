@@ -52,8 +52,11 @@
                     <td class="px-4 py-3">{{ $doc->typeLabel() }}</td>
                     <td class="px-4 py-3">{{ $doc->customer_name }}</td>
                     <td class="px-4 py-3">{{ $doc->is_gst_applicable ? 'Yes' : 'No' }}</td>
-                    <td class="px-4 py-3 text-right font-semibold">₹{{ number_format($doc->grand_total, 2) }}</td>
-                    <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700">{{ ucfirst($doc->status) }}</span></td>
+                    <td class="px-4 py-3 text-right font-semibold">{{ $doc->currency === 'USD' ? '$' : '₹' }}{{ number_format($doc->grand_total, 2) }}</td>
+                    @php
+                        $docStatusColors = ['draft' => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', 'sent' => 'bg-blue-100 text-blue-700', 'accepted' => 'bg-indigo-100 text-indigo-700', 'paid' => 'bg-emerald-100 text-emerald-700', 'cancelled' => 'bg-red-100 text-red-700'];
+                    @endphp
+                    <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold {{ $docStatusColors[$doc->status] ?? 'bg-gray-100 text-gray-700' }}">{{ ucfirst($doc->status) }}</span></td>
                     <td class="px-4 py-3">{{ $doc->issue_date->format('d M Y') }}</td>
                     <td class="px-4 py-3 text-xs text-gray-500">
                         @if($doc->lead_id) Lead @endif

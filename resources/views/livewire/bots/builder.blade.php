@@ -37,7 +37,6 @@
         <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 min-h-[500px]">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-semibold">Visual Flow</h3>
-                <button class="text-xs text-indigo-600">Auto Align</button>
             </div>
 
             {{-- START node --}}

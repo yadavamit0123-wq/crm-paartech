@@ -2,8 +2,10 @@
 
 namespace App\Livewire\SalesTargets;
 
+use App\Models\Lead;
 use App\Models\SalesTarget;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 
 class Index extends Component
@@ -61,10 +63,26 @@ class Index extends Component
 
     public function render()
     {
+        $periodStart = Carbon::create($this->year, $this->month, 1)->startOfMonth();
+        $periodEnd = $periodStart->copy()->endOfMonth();
+
+        $wonValueByUser = Lead::query()
+            ->whereHas('stage', fn ($q) => $q->where('is_won', true))
+            ->where(function ($q) use ($periodStart, $periodEnd) {
+                $q->whereBetween('converted_at', [$periodStart, $periodEnd])
+                    ->orWhere(function ($q) use ($periodStart, $periodEnd) {
+                        $q->whereNull('converted_at')->whereBetween('updated_at', [$periodStart, $periodEnd]);
+                    });
+            })
+            ->selectRaw('assigned_to, SUM(value) as total')
+            ->groupBy('assigned_to')
+            ->pluck('total', 'assigned_to');
+
         $targets = SalesTarget::with('user')
             ->where('month', $this->month)
             ->where('year', $this->year)
             ->get()
+            ->each(fn ($target) => $target->achieved_value = (float) ($wonValueByUser[$target->user_id] ?? 0))
             ->groupBy('user_id');
 
         $employees = User::where('tenant_id', auth()->user()->tenant_id)->where('is_active', true)->get();

@@ -25,6 +25,9 @@ class Index extends Component
     public string $hsnSac = '';
     public $image;
     public bool $isActive = true;
+    public $importFile;
+    public array $importErrors = [];
+    public int $importedCount = 0;
 
     public function openCreate(): void
     {
@@ -81,6 +84,89 @@ class Index extends Component
         $this->showModal = false;
         $this->resetForm();
         $this->dispatch('notify', message: 'Product saved');
+    }
+
+    public function openImport(): void
+    {
+        $this->importFile = null;
+        $this->importErrors = [];
+        $this->importedCount = 0;
+        $this->showImportModal = true;
+    }
+
+    public function import(): void
+    {
+        $this->validate(['importFile' => 'required|file|mimes:csv,txt|max:5120']);
+
+        $this->importErrors = [];
+        $this->importedCount = 0;
+
+        $handle = fopen($this->importFile->getRealPath(), 'r');
+        $headers = fgetcsv($handle);
+
+        if ($headers === false) {
+            fclose($handle);
+            $this->importErrors[] = 'The file is empty';
+
+            return;
+        }
+
+        $headers = array_map(fn ($h) => strtolower(trim($h)), $headers);
+
+        if (! in_array('name', $headers)) {
+            fclose($handle);
+            $this->importErrors[] = 'Missing required column: name';
+
+            return;
+        }
+
+        $rowNum = 1;
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+            if (count($row) < 1 || empty(trim($row[0] ?? ''))) {
+                continue;
+            }
+
+            $data = array_combine($headers, array_pad(array_slice($row, 0, count($headers)), count($headers), ''));
+            $name = trim($data['name'] ?? '');
+
+            if (empty($name)) {
+                $this->importErrors[] = "Row {$rowNum}: Name is required";
+
+                continue;
+            }
+
+            $price = trim($data['price'] ?? '');
+            if ($price === '' || ! is_numeric($price)) {
+                $this->importErrors[] = "Row {$rowNum}: Valid price is required";
+
+                continue;
+            }
+
+            $gstRate = trim($data['gst_rate'] ?? '');
+
+            try {
+                Product::create([
+                    'tenant_id' => auth()->user()->tenant_id,
+                    'name' => $name,
+                    'sku' => trim($data['sku'] ?? '') ?: null,
+                    'price' => $price,
+                    'tax_rate' => is_numeric($gstRate) ? $gstRate : 18,
+                    'hsn_sac' => trim($data['hsn_sac'] ?? '') ?: null,
+                    'category' => trim($data['category'] ?? '') ?: null,
+                    'unit' => trim($data['unit'] ?? '') ?: 'Nos',
+                    'description' => trim($data['description'] ?? '') ?: null,
+                    'is_active' => true,
+                ]);
+                $this->importedCount++;
+            } catch (\Exception $e) {
+                $this->importErrors[] = "Row {$rowNum}: ".$e->getMessage();
+            }
+        }
+
+        fclose($handle);
+        $this->importFile = null;
+        $this->dispatch('notify', message: $this->importedCount.' products imported');
     }
 
     public function delete(int $id): void

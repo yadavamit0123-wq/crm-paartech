@@ -186,6 +186,24 @@
                     <div class="md:col-span-2"><span class="text-gray-500">Address:</span> {{ $lead->address ?? '—' }}</div>
                     <div class="md:col-span-2"><span class="text-gray-500">Notes:</span> {{ $lead->notes ?? '—' }}</div>
                 </div>
+                @if($customFields->count())
+                <div class="mt-4 border-t dark:border-gray-700 pt-4">
+                    <h4 class="font-medium text-sm mb-2">Custom Fields</h4>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        @foreach($customFields as $field)
+                        @php $cfValue = $lead->custom_fields[$field->field_key] ?? null; @endphp
+                        <div>
+                            <span class="text-gray-500">{{ $field->label }}:</span>
+                            @if($field->field_type === 'checkbox')
+                            {{ $cfValue ? 'Yes' : 'No' }}
+                            @else
+                            {{ ($cfValue !== null && $cfValue !== '') ? $cfValue : '—' }}
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
                 <div class="mt-4 flex flex-wrap gap-2">
                     @if(auth()->user()->hasPermission('customers.manage'))
                         @if($lead->is_customer && $lead->customer)
@@ -221,6 +239,12 @@
                     </div>
                 </div>
                 @endif
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700">
+                <h3 class="font-semibold mb-4">Company Profile</h3>
+                <textarea wire:model="companyProfile" rows="4" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="Company background, products, requirements..."></textarea>
+                <button wire:click="saveCompanyProfile" class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">Save Profile</button>
             </div>
             @endif
 
@@ -367,6 +391,26 @@
                 <select wire:model="editAssignedTo" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                     @foreach($employees as $emp)<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endforeach
                 </select>
+                @foreach($customFields as $field)
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ $field->label }}</label>
+                    @if($field->field_type === 'select')
+                    <select wire:model="customFieldValues.{{ $field->field_key }}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                        <option value="">Select...</option>
+                        @foreach($field->options ?? [] as $option)
+                        <option value="{{ $option }}">{{ $option }}</option>
+                        @endforeach
+                    </select>
+                    @elseif($field->field_type === 'checkbox')
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" wire:model="customFieldValues.{{ $field->field_key }}" class="rounded border-gray-300 dark:border-gray-600">
+                        <span>Yes</span>
+                    </label>
+                    @else
+                    <input type="{{ match($field->field_type) { 'number' => 'number', 'date' => 'date', 'email' => 'email', 'phone' => 'tel', default => 'text' } }}" wire:model="customFieldValues.{{ $field->field_key }}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" placeholder="{{ $field->label }}">
+                    @endif
+                </div>
+                @endforeach
             </div>
             <div class="flex gap-2 mt-4">
                 <button wire:click="updateLead" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Save</button>

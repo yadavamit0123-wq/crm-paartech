@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Leads;
 
+use App\Models\CustomField;
 use App\Models\Lead;
 use App\Models\LeadChatMessage;
 use App\Models\LeadForward;
@@ -14,6 +15,7 @@ use App\Models\LeadTask;
 use App\Models\User;
 use App\Services\CustomerService;
 use App\Services\ReviewRequestService;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Throwable;
@@ -57,6 +59,7 @@ class Show extends Component
     public ?int $editAssignedTo = null;
     public string $editServiceType = '';
     public string $companyProfile = '';
+    public array $customFieldValues = [];
 
     public function mount(Lead $lead): void
     {
@@ -82,6 +85,7 @@ class Show extends Component
         $this->editAssignedTo = $lead->assigned_to;
         $this->editServiceType = $lead->service_type ?? '';
         $this->companyProfile = $lead->company_profile ?? '';
+        $this->customFieldValues = $lead->custom_fields ?? [];
         $this->reminderAt = now()->addHour()->format('Y-m-d\TH:i');
         $this->taskDueAt = now()->addDay()->format('Y-m-d\TH:i');
 
@@ -374,6 +378,10 @@ class Show extends Component
         try {
             $oldStage = $this->lead->stage?->name;
 
+            $customFields = collect($this->customFieldValues)
+                ->filter(fn ($value) => $value !== null && $value !== '')
+                ->all();
+
             $this->lead->update([
                 'name' => $this->editName,
                 'email' => $this->editEmail ?: null,
@@ -383,6 +391,7 @@ class Show extends Component
                 'lead_label_id' => $this->editLabelId ?: null,
                 'assigned_to' => $this->editAssignedTo,
                 'service_type' => $this->editServiceType ?: null,
+                'custom_fields' => $customFields ?: null,
             ]);
 
             $newStage = LeadStage::find($this->editStageId)?->name;
@@ -451,6 +460,15 @@ class Show extends Component
         return $this->redirect(route('leads.customers.show', $customer), navigate: true);
     }
 
+    protected function getCustomFields()
+    {
+        if (! Schema::hasTable('custom_fields')) {
+            return collect();
+        }
+
+        return CustomField::where('entity_type', 'lead')->orderBy('sort_order')->get();
+    }
+
     public function render()
     {
         $employees = User::where('tenant_id', auth()->user()->tenant_id)->where('is_active', true)->get();
@@ -459,8 +477,9 @@ class Show extends Component
         $timeline = $this->lead->activities()->with('user')->latest()->get();
         $openTasks = $this->lead->tasks()->where('status', 'pending')->get();
         $whatsappTemplates = $this->getWhatsappTemplates();
+        $customFields = $this->getCustomFields();
 
-        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates'))
+        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates', 'customFields'))
             ->layout('layouts.app');
     }
 }

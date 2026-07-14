@@ -1,7 +1,7 @@
 @php
     $tabs = [
         ['route' => 'leads.dashboard', 'label' => 'Dashboard', 'match' => 'leads.dashboard'],
-        ['route' => 'leads.list', 'label' => 'Lead List', 'match' => 'leads.list|leads.create|leads.show|leads.bulk-upload|leads.forms'],
+        ['route' => 'leads.list', 'label' => 'Lead List', 'match' => 'leads.list|leads.create|leads.show|leads.bulk-upload'],
         ['route' => 'leads.forms', 'label' => 'Forms', 'match' => 'leads.forms'],
         ['route' => 'leads.inbox', 'label' => 'Inbox', 'match' => 'leads.inbox'],
         ['route' => 'leads.tasks', 'label' => 'Tasks', 'match' => 'leads.tasks'],
@@ -16,22 +16,19 @@
         ['route' => 'leads.reports', 'label' => 'Reports', 'match' => 'leads.reports|leads.call-logs'],
         ['route' => 'leads.customers', 'label' => 'Customers', 'match' => 'leads.customers*'],
         ['route' => 'leads.lead-sources', 'label' => 'Sources', 'match' => 'leads.lead-sources'],
-        ['route' => 'leads.settings', 'label' => 'Settings', 'match' => 'leads.settings|leads.custom-fields|leads.stages|leads.team'],
+        ['route' => 'leads.settings', 'label' => 'Settings', 'match' => 'leads.settings|leads.custom-fields|leads.stages|leads.team|leads.labels'],
     ];
 @endphp
-<div class="mb-4 -mx-1">
-    <div class="flex items-center gap-2 mb-3">
-        <h2 class="text-lg font-bold text-indigo-600">Leads CRM</h2>
-        <span class="text-xs text-gray-400">3Sigma-style hub</span>
-    </div>
-    <div class="flex gap-1 overflow-x-auto pb-2 scrollbar-thin">
+<div class="mb-5 -mx-4 lg:-mx-6 px-4 lg:px-6 pt-1 pb-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-[49px] z-20">
+    <nav class="flex gap-0.5 overflow-x-auto scrollbar-thin" aria-label="Leads CRM sections">
         @foreach($tabs as $tab)
             @if(Route::has($tab['route']))
+            @php $active = request()->routeIs($tab['match']); @endphp
             <a href="{{ route($tab['route']) }}"
-               class="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm transition {{ request()->routeIs($tab['match']) ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'bg-white dark:bg-gray-800 border dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20' }}">
+               class="whitespace-nowrap px-3.5 py-2.5 text-[13px] font-medium border-b-2 transition-colors {{ $active ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:border-gray-300' }}">
                 {{ $tab['label'] }}
             </a>
             @endif
         @endforeach
-    </div>
+    </nav>
 </div>

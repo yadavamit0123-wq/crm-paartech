@@ -89,6 +89,35 @@
                 <textarea wire:model="notes" rows="3" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"></textarea>
             </div>
         </div>
+
+        @if($customFields->count())
+        <div class="mt-6 pt-4 border-t dark:border-gray-700">
+            <h3 class="text-sm font-semibold mb-3">Custom Fields</h3>
+            <div class="grid md:grid-cols-2 gap-4">
+                @foreach($customFields as $field)
+                <div>
+                    <label class="block text-sm font-medium mb-1">{{ $field->label }}{{ $field->is_required ? ' *' : '' }}</label>
+                    @if($field->field_type === 'select')
+                    <select wire:model="customFieldValues.{{ $field->field_key }}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                        <option value="">Select...</option>
+                        @foreach($field->options ?? [] as $option)
+                        <option value="{{ $option }}">{{ $option }}</option>
+                        @endforeach
+                    </select>
+                    @elseif($field->field_type === 'checkbox')
+                    <label class="inline-flex items-center gap-2 text-sm mt-1">
+                        <input type="checkbox" wire:model="customFieldValues.{{ $field->field_key }}" class="rounded border-gray-300 dark:border-gray-600">
+                        <span>Yes</span>
+                    </label>
+                    @else
+                    <input type="{{ match($field->field_type) { 'number' => 'number', 'date' => 'date', 'email' => 'email', 'phone' => 'tel', default => 'text' } }}" wire:model="customFieldValues.{{ $field->field_key }}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                    @endif
+                    @error('customFieldValues.'.$field->field_key) <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
         <button type="submit" wire:loading.attr="disabled" wire:target="save" class="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60">
             <span wire:loading.remove wire:target="save">Save Lead / सेव करें</span>
             <span wire:loading wire:target="save">Saving...</span>

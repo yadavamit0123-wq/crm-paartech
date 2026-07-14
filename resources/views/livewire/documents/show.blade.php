@@ -1,39 +1,57 @@
-<div>
+<div x-data="{ view: 'pdf' }">
     @include('layouts.partials.leads-nav')
     <div class="mb-4 flex flex-wrap justify-between items-start gap-4">
         <div>
-            <a href="{{ route('leads.documents') }}" class="text-sm" style="color: {{ $accent }}">← Back to Quotes</a>
-            <h1 class="text-2xl font-bold mt-2">{{ $document->typeLabel() }}</h1>
-            <p class="text-gray-500">{{ $document->document_number }} • {{ $document->customer_name }}</p>
-            @if($document->title)<p class="text-sm" style="color: {{ $accent }}">{{ $document->title }}</p>@endif
+            <a href="{{ route('leads.documents') }}" class="text-sm font-medium" style="color: {{ $accent }}">← Back to Quotes</a>
+            <div class="flex items-center gap-3 mt-1.5">
+                <h1 class="text-2xl font-bold">{{ $document->typeLabel() }}</h1>
+                @php
+                    $statusColors = ['draft' => 'bg-gray-100 text-gray-700', 'sent' => 'bg-blue-100 text-blue-700', 'accepted' => 'bg-indigo-100 text-indigo-700', 'paid' => 'bg-emerald-100 text-emerald-700'];
+                @endphp
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusColors[$document->status] ?? 'bg-gray-100 text-gray-700' }}">{{ ucfirst($document->status) }}</span>
+            </div>
+            <p class="text-gray-500 text-sm mt-0.5">{{ $document->document_number }} • {{ $document->customer_name }}@if($document->title) • <span style="color: {{ $accent }}">{{ $document->title }}</span>@endif</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('leads.documents.pdf', $document) }}" target="_blank" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">👁 Preview PDF</a>
-            <a href="{{ route('leads.documents.download', $document) }}" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">⬇ Download PDF</a>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('leads.documents.download', $document) }}" class="inline-flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm" style="background: {{ $accent }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                Download PDF
+            </a>
             @if(auth()->user()->hasPermission('documents.create'))
-            <a href="{{ route('leads.documents.edit', $document) }}" class="px-4 py-2 border rounded-lg text-sm" style="border-color: {{ $accent }}; color: {{ $accent }}">✎ Edit</a>
-            <button wire:click="duplicate" class="px-4 py-2 border rounded-lg text-sm dark:border-gray-600">⧉ Duplicate</button>
+            <a href="{{ route('leads.documents.edit', $document) }}" class="px-4 py-2 border rounded-lg text-sm font-medium dark:border-gray-600" style="border-color: {{ $accent }}; color: {{ $accent }}">Edit</a>
             @endif
-            <button wire:click="openEmailModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">✉ Email</button>
-            <button wire:click="openWhatsAppModal" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">💬 WhatsApp</button>
-            @if($document->status === 'draft')
-            <button wire:click="markSent" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Mark Sent</button>
-            @endif
-            @if(in_array($document->status, ['sent','draft']) && $document->type === 'quotation')
-            <button wire:click="markAccepted" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">Mark Accepted</button>
-            @endif
-            @if(in_array($document->status, ['sent', 'accepted']))
-            <button wire:click="markPaid" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">Mark Paid</button>
-            @endif
+            <button wire:click="openEmailModal" class="px-4 py-2 border rounded-lg text-sm font-medium dark:border-gray-600">Email</button>
+            <button wire:click="openWhatsAppModal" class="px-4 py-2 border rounded-lg text-sm font-medium dark:border-gray-600 text-green-600">WhatsApp</button>
+
             @if($canConvertProforma)
-            <button wire:click="convertTo('proforma')" class="px-4 py-2 text-white rounded-lg text-sm" style="background: {{ $accent }}">→ Proforma Invoice</button>
+            <button wire:click="convertTo('proforma')" class="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium">→ Proforma</button>
             @endif
             @if($canConvertInvoice)
-            <button wire:click="convertTo('invoice')" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">→ Tax Invoice</button>
+            <button wire:click="convertTo('invoice')" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium">→ Tax Invoice</button>
             @endif
-            @if(auth()->user()->hasPermission('documents.create'))
-            <button wire:click="deleteDocument" wire:confirm="Delete this document?" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm">🗑 Delete</button>
-            @endif
+
+            <div x-data="{ more: false }" class="relative">
+                <button @click="more = !more" class="px-3 py-2 border rounded-lg text-sm font-medium dark:border-gray-600">More ▾</button>
+                <div x-show="more" x-cloak @click.away="more = false" class="absolute right-0 mt-1 w-52 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-xl py-1.5 z-40">
+                    <a href="{{ route('leads.documents.pdf', $document) }}" target="_blank" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Open PDF in new tab</a>
+                    @if(auth()->user()->hasPermission('documents.create'))
+                    <button wire:click="duplicate" @click="more = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Duplicate</button>
+                    @endif
+                    @if($document->status === 'draft')
+                    <button wire:click="markSent" @click="more = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Mark as Sent</button>
+                    @endif
+                    @if(in_array($document->status, ['sent','draft']) && $document->type === 'quotation')
+                    <button wire:click="markAccepted" @click="more = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Mark as Accepted</button>
+                    @endif
+                    @if(in_array($document->status, ['sent', 'accepted']))
+                    <button wire:click="markPaid" @click="more = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Mark as Paid</button>
+                    @endif
+                    @if(auth()->user()->hasPermission('documents.create'))
+                    <div class="border-t dark:border-gray-700 my-1"></div>
+                    <button wire:click="deleteDocument" wire:confirm="Delete this document?" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Delete</button>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 
@@ -68,7 +86,19 @@
     @endif
 
     <div class="grid lg:grid-cols-3 gap-4">
-        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700">
+        <div class="lg:col-span-2">
+            {{-- View toggle: exact PDF (same as download) vs details --}}
+            <div class="flex items-center gap-1 mb-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-1 w-fit">
+                <button @click="view = 'pdf'" :class="view === 'pdf' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300'" class="px-4 py-1.5 rounded-md text-sm font-medium transition">PDF Preview</button>
+                <button @click="view = 'details'" :class="view === 'details' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300'" class="px-4 py-1.5 rounded-md text-sm font-medium transition">Details</button>
+            </div>
+
+            {{-- Exact PDF preview — bilkul wahi jo download hota hai --}}
+            <div x-show="view === 'pdf'" class="bg-gray-200 dark:bg-gray-900 rounded-xl border dark:border-gray-700 overflow-hidden">
+                <iframe src="{{ route('leads.documents.pdf', $document) }}#toolbar=0&view=FitH" class="w-full" style="height: 78vh; border: 0;" title="PDF Preview"></iframe>
+            </div>
+
+            <div x-show="view === 'details'" x-cloak class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700">
             <div class="flex justify-between mb-4">
                 <div class="flex items-center gap-3">
                     @if($document->logo_path)
@@ -142,6 +172,7 @@
                 <p class="text-xs text-gray-400 mt-2">Authorized Signatory</p>
             </div>
             @endif
+            </div>
         </div>
 
         <div class="space-y-4">

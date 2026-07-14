@@ -20,5 +20,16 @@ class AppServiceProvider extends ServiceProvider
         Model::unguard(false);
         Schema::defaultStringLength(191);
         Lead::observe(LeadObserver::class);
+
+        foreach ([
+            storage_path('app/livewire-tmp'),
+            storage_path('app/public/documents/logos'),
+            storage_path('app/public/documents/items'),
+            storage_path('app/public/documents/attachments'),
+        ] as $dir) {
+            if (! is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+        }
     }
 }

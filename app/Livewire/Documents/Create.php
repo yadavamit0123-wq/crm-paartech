@@ -237,10 +237,13 @@ class Create extends Component
     {
         $templates = config('document-templates', []);
         if (! isset($templates[$key])) {
+            $this->dispatch('notify', message: 'Template not found', type: 'error');
+
             return;
         }
         $this->template_key = $key;
         $this->theme_color = $templates[$key]['color'];
+        $this->dispatch('notify', message: 'Template: '.$templates[$key]['name']);
     }
 
     public function updatedTemplateKey(string $value): void
@@ -250,12 +253,29 @@ class Create extends Component
 
     public function updatedLogoUpload(): void
     {
-        $this->validate(['logoUpload' => 'nullable|image|max:2048']);
-        if ($this->logoUpload) {
-            $path = $this->logoUpload->store('documents/logos/'.auth()->user()->tenant_id, 'public');
+        if (! $this->logoUpload) {
+            return;
+        }
+
+        try {
+            $this->validate([
+                'logoUpload' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:5120',
+            ]);
+
+            if ($this->logo_path) {
+                Storage::disk('public')->delete($this->logo_path);
+            }
+
+            $path = $this->logoUpload->store(
+                'documents/logos/'.auth()->user()->tenant_id,
+                'public'
+            );
             $this->logo_path = $path;
             $this->logoUpload = null;
-            $this->dispatch('notify', message: 'Logo uploaded');
+            $this->dispatch('notify', message: 'Logo uploaded successfully');
+        } catch (\Throwable $e) {
+            $this->logoUpload = null;
+            $this->dispatch('notify', message: 'Logo upload failed: '.$e->getMessage(), type: 'error');
         }
     }
 
@@ -432,6 +452,40 @@ class Create extends Component
             abort(403);
         }
 
+        $document = $this->persistDocument($documentService);
+        session()->flash('success', $this->documentId ? 'Document updated successfully' : 'Document created successfully');
+        $this->dispatch('notify', message: 'Document saved');
+
+        return redirect()->route('leads.documents.show', $document);
+    }
+
+    public function saveAndPreview(DocumentService $documentService)
+    {
+        if (! auth()->user()->hasPermission('documents.create')) {
+            abort(403);
+        }
+
+        $document = $this->persistDocument($documentService);
+        session()->flash('success', 'Document saved — opening PDF preview');
+        $this->dispatch('open-url', url: route('leads.documents.pdf', $document));
+
+        return redirect()->route('leads.documents.show', $document);
+    }
+
+    public function saveAndDownload(DocumentService $documentService)
+    {
+        if (! auth()->user()->hasPermission('documents.create')) {
+            abort(403);
+        }
+
+        $document = $this->persistDocument($documentService);
+        session()->flash('success', 'Document saved — downloading PDF');
+
+        return redirect()->route('leads.documents.download', $document);
+    }
+
+    protected function persistDocument(DocumentService $documentService): Document
+    {
         $this->validate([
             'type' => 'required|in:quotation,proforma,invoice',
             'customer_name' => 'required|string|max:255',
@@ -441,23 +495,35 @@ class Create extends Component
             'items.*.rate' => 'required|numeric|min:0',
             'document_number' => 'nullable|string|max:50',
             'exchange_rate' => 'nullable|numeric|min:0',
+            'logoUpload' => 'nullable|image|max:5120',
         ]);
 
         $payload = $this->buildPayload();
 
         if ($this->documentId) {
             $document = Document::findOrFail($this->documentId);
-            $document = $documentService->updateDocument($document, $payload, $this->items);
-            $message = 'Document updated successfully';
-        } else {
-            $document = $documentService->createDocument($payload, $this->items, auth()->user()->tenant);
-            $message = 'Document created successfully';
+
+            return $documentService->updateDocument($document, $payload, $this->items);
         }
 
-        session()->flash('success', $message);
-        $this->dispatch('notify', message: $message);
+        return $documentService->createDocument($payload, $this->items, auth()->user()->tenant);
+    }
 
-        return redirect()->route('leads.documents.show', $document);
+    public function getLogoPreviewUrlProperty(): ?string
+    {
+        if ($this->logo_path) {
+            return Storage::disk('public')->url($this->logo_path);
+        }
+
+        if ($this->logoUpload) {
+            try {
+                return $this->logoUpload->temporaryUrl();
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     protected function buildPayload(): array

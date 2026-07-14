@@ -23,6 +23,8 @@ fi
 # Laravel maintenance
 php artisan migrate --force
 php artisan storage:link 2>/dev/null || true
+mkdir -p storage/app/livewire-tmp storage/app/public/documents/logos storage/app/public/documents/items storage/app/public/documents/attachments
+chmod -R 775 storage/app/livewire-tmp storage/app/public 2>/dev/null || true
 
 php artisan config:clear
 php artisan view:clear

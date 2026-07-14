@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {{-- Alpine is bundled with Livewire 3 — do NOT load a second Alpine CDN (breaks wire:click & uploads) --}}
     @livewireStyles
     <script>
         tailwind.config = {

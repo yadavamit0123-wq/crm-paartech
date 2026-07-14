@@ -8,7 +8,8 @@
             @if($document->title)<p class="text-sm" style="color: {{ $accent }}">{{ $document->title }}</p>@endif
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('leads.documents.pdf', $document) }}" target="_blank" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">📄 PDF</a>
+            <a href="{{ route('leads.documents.pdf', $document) }}" target="_blank" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">👁 Preview PDF</a>
+            <a href="{{ route('leads.documents.download', $document) }}" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">⬇ Download PDF</a>
             @if(auth()->user()->hasPermission('documents.create'))
             <a href="{{ route('leads.documents.edit', $document) }}" class="px-4 py-2 border rounded-lg text-sm" style="border-color: {{ $accent }}; color: {{ $accent }}">✎ Edit</a>
             <button wire:click="duplicate" class="px-4 py-2 border rounded-lg text-sm dark:border-gray-600">⧉ Duplicate</button>
@@ -71,7 +72,7 @@
             <div class="flex justify-between mb-4">
                 <div class="flex items-center gap-3">
                     @if($document->logo_path)
-                    <img src="{{ Storage::url($document->logo_path) }}" alt="Logo" class="h-12 w-auto object-contain">
+                    <img src="{{ asset('storage/'.$document->logo_path) }}" alt="Logo" class="h-12 w-auto object-contain">
                     @endif
                     <span class="px-3 py-1 rounded-full text-sm {{ $document->is_gst_applicable ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800' }}">
                         {{ $document->is_gst_applicable ? 'With GST' : 'Without GST' }}
@@ -99,7 +100,7 @@
                         <td class="py-2 px-2">
                             <div class="flex gap-2 items-start">
                                 @if($item->image_path)
-                                <img src="{{ Storage::url($item->image_path) }}" alt="" class="w-10 h-10 object-cover rounded border shrink-0">
+                                <img src="{{ asset('storage/'.$item->image_path) }}" alt="" class="w-10 h-10 object-cover rounded border shrink-0">
                                 @endif
                                 <div>
                                     <div class="font-medium">{{ $item->description }}</div>

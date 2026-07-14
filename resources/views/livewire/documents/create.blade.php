@@ -12,9 +12,20 @@
             <h1 class="text-2xl font-bold mt-1">{{ $documentId ? 'Edit' : 'Create' }} {{ $typeLabels[$type] ?? 'Document' }}</h1>
             @if($lastNumber)<p class="text-xs text-gray-500">Last No: {{ $lastNumber }}</p>@endif
         </div>
-        <button type="button" wire:click="save" class="px-5 py-2.5 rounded-lg text-white font-semibold text-sm" style="background: {{ $accent }}">
-            Save & Continue
-        </button>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" wire:click="saveAndPreview" wire:loading.attr="disabled" class="px-4 py-2.5 rounded-lg border text-sm font-medium dark:border-gray-600" style="border-color: {{ $accent }}; color: {{ $accent }}">
+                <span wire:loading.remove wire:target="saveAndPreview">👁 Preview PDF</span>
+                <span wire:loading wire:target="saveAndPreview">Saving...</span>
+            </button>
+            <button type="button" wire:click="saveAndDownload" wire:loading.attr="disabled" class="px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium">
+                <span wire:loading.remove wire:target="saveAndDownload">⬇ Download PDF</span>
+                <span wire:loading wire:target="saveAndDownload">Saving...</span>
+            </button>
+            <button type="button" wire:click="save" wire:loading.attr="disabled" class="px-5 py-2.5 rounded-lg text-white font-semibold text-sm" style="background: {{ $accent }}">
+                <span wire:loading.remove wire:target="save">Save & Continue</span>
+                <span wire:loading wire:target="save">Saving...</span>
+            </button>
+        </div>
     </div>
 
     {{-- Document Number --}}
@@ -70,29 +81,38 @@
         <div class="mb-4 p-3 border rounded-lg dark:border-gray-600">
             <label class="text-xs font-medium text-gray-500 uppercase mb-2 block">Company Logo</label>
             <div class="flex flex-wrap items-center gap-4">
-                @if($logo_path)
+                @if($this->logoPreviewUrl)
                 <div class="relative">
-                    <img src="{{ Storage::url($logo_path) }}" alt="Logo" class="h-16 w-auto object-contain border rounded">
-                    <button type="button" wire:click="removeLogo" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs">✕</button>
+                    <img src="{{ $this->logoPreviewUrl }}" alt="Logo" class="h-16 w-auto max-w-[140px] object-contain border rounded bg-white p-1">
+                    @if($logo_path)
+                    <button type="button" wire:click="removeLogo" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs leading-none">✕</button>
+                    @endif
                 </div>
                 @endif
-                <label class="cursor-pointer px-4 py-2 border-2 border-dashed rounded-lg text-sm" style="border-color: {{ $accent }}; color: {{ $accent }}">
-                    <input type="file" wire:model="logoUpload" accept="image/*" class="hidden">
-                    {{ $logo_path ? 'Change Logo' : 'Upload Logo' }}
-                </label>
-                <div wire:loading wire:target="logoUpload" class="text-xs text-gray-500">Uploading...</div>
+                <div class="flex-1 min-w-[200px]">
+                    <input type="file" wire:model="logoUpload" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                           class="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:text-white file:cursor-pointer"
+                           style="--tw-file-bg: {{ $accent }}">
+                    <div wire:loading wire:target="logoUpload" class="text-xs mt-1" style="color: {{ $accent }}">Uploading logo...</div>
+                    @error('logoUpload') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    <p class="text-xs text-gray-400 mt-1">PNG, JPG, WEBP — max 5MB</p>
+                </div>
             </div>
         </div>
 
         <label class="text-xs font-medium text-gray-500 uppercase mb-2 block">Choose Format / Template</label>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             @foreach($templates as $key => $tpl)
-            <button type="button" wire:click="setTemplate('{{ $key }}')"
-                class="rounded-lg border-2 p-3 text-left transition {{ $template_key === $key ? 'ring-2 ring-offset-1' : 'border-gray-200 dark:border-gray-600' }}"
+            <label class="cursor-pointer rounded-lg border-2 p-3 text-left transition block
+                {{ $template_key === $key ? 'ring-2 ring-offset-1 shadow-md' : 'border-gray-200 dark:border-gray-600 hover:border-gray-400' }}"
                 style="{{ $template_key === $key ? 'border-color:'.$tpl['color'].'; --tw-ring-color:'.$tpl['color'] : '' }}">
+                <input type="radio" wire:model.live="template_key" value="{{ $key }}" class="sr-only">
                 <div class="h-2 rounded mb-2" style="background: {{ $tpl['color'] }}"></div>
                 <div class="text-xs font-semibold">{{ $tpl['name'] }}</div>
-            </button>
+                @if($template_key === $key)
+                <div class="text-[10px] mt-1 font-medium" style="color: {{ $tpl['color'] }}">✓ Selected</div>
+                @endif
+            </label>
             @endforeach
         </div>
         <div class="mt-3 flex items-center gap-2">
@@ -230,7 +250,7 @@
                             <div class="col-span-5 flex gap-2 items-start">
                                 @if(!empty($item['image_path']))
                                 <div class="relative shrink-0">
-                                    <img src="{{ Storage::url($item['image_path']) }}" alt="" class="w-10 h-10 object-cover rounded border">
+                                    <img src="{{ asset('storage/'.$item['image_path']) }}" alt="" class="w-10 h-10 object-cover rounded border">
                                     <button type="button" wire:click="removeItemImage({{ $index }})" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-[10px]">✕</button>
                                 </div>
                                 @endif
@@ -376,6 +396,48 @@
 
         {{-- Totals sidebar --}}
         <div class="space-y-4">
+            {{-- Live Preview --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden shadow-sm">
+                <div class="px-4 py-2 text-white text-xs font-semibold uppercase tracking-wide" style="background: {{ $accent }}">
+                    Live Preview — {{ $templates[$template_key]['name'] ?? 'Template' }}
+                </div>
+                <div class="p-4 text-sm">
+                    <div class="flex justify-between items-start gap-2 mb-3 pb-3 border-b dark:border-gray-600">
+                        <div>
+                            @if($this->logoPreviewUrl)
+                            <img src="{{ $this->logoPreviewUrl }}" alt="" class="h-8 mb-1 object-contain">
+                            @endif
+                            <div class="font-bold text-xs">{{ $tenant->name }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold uppercase text-xs" style="color: {{ $accent }}">{{ $typeLabels[$type] ?? 'Document' }}</div>
+                            <div class="text-[10px] text-gray-500">{{ $document_number ?: $suggestedNumber }}</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-[10px] text-gray-400 uppercase">Bill To</div>
+                        <div class="font-medium">{{ $customer_name ?: 'Client Name' }}</div>
+                        @if($customer_phone)<div class="text-xs text-gray-500">{{ $customer_phone }}</div>@endif
+                    </div>
+                    @foreach(array_slice($items, 0, 3) as $pi => $prevItem)
+                    @if(trim($prevItem['description'] ?? '') !== '')
+                    <div class="flex justify-between text-xs py-1 border-b dark:border-gray-700">
+                        <span class="truncate pr-2">{{ $prevItem['description'] }}</span>
+                        <span class="shrink-0">{{ $currencySymbol }}{{ number_format(max((($prevItem['quantity'] ?? 0) * ($prevItem['rate'] ?? 0)), 0), 2) }}</span>
+                    </div>
+                    @endif
+                    @endforeach
+                    @if(count($items) > 3)
+                    <div class="text-[10px] text-gray-400 py-1">+ {{ count($items) - 3 }} more items...</div>
+                    @endif
+                    <div class="mt-3 pt-2 border-t dark:border-gray-600 flex justify-between font-bold" style="color: {{ $accent }}">
+                        <span>Total</span>
+                        <span>{{ $currencySymbol }}{{ number_format($totals['grand_total'] ?? 0, 2) }}</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-2 italic">Save → Preview PDF opens full document</p>
+                </div>
+            </div>
+
             <div class="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 sticky top-4 shadow-sm">
                 <h3 class="font-semibold mb-3">Summary</h3>
                 <div class="space-y-2 text-sm">
@@ -418,7 +480,13 @@
                     @endif
                     <p class="text-xs text-gray-500 italic">{{ $totals['total_in_words'] ?? '' }}</p>
                 </div>
-                <button type="button" wire:click="save" class="w-full mt-4 py-2.5 rounded-lg text-white font-semibold text-sm" style="background: {{ $accent }}">
+                <button type="button" wire:click="saveAndPreview" wire:loading.attr="disabled" class="w-full mt-2 py-2 rounded-lg border text-sm font-medium dark:border-gray-600" style="border-color: {{ $accent }}; color: {{ $accent }}">
+                    👁 Save & Preview PDF
+                </button>
+                <button type="button" wire:click="saveAndDownload" wire:loading.attr="disabled" class="w-full mt-2 py-2 rounded-lg bg-red-600 text-white text-sm font-medium">
+                    ⬇ Save & Download PDF
+                </button>
+                <button type="button" wire:click="save" wire:loading.attr="disabled" class="w-full mt-2 py-2.5 rounded-lg text-white font-semibold text-sm" style="background: {{ $accent }}">
                     Save & Continue
                 </button>
             </div>

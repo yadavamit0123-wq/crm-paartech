@@ -97,7 +97,7 @@ class Show extends Component
         ]);
 
         try {
-            $pdfContent = app(PdfService::class)->generateDocumentPdf($this->document)->output();
+            $pdfContent = app(PdfService::class)->renderedPdfOutput($this->document);
             $filename = str_replace('/', '-', $this->document->document_number).'.pdf';
 
             Mail::raw($this->emailMessage, function ($mail) use ($pdfContent, $filename) {

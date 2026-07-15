@@ -31,7 +31,7 @@ class PdfService
     /**
      * Render + stamp "Page X of Y" like the sample footer (right side).
      */
-    protected function renderedPdfOutput(Document $document): string
+    public function renderedPdfOutput(Document $document): string
     {
         $pdf = $this->generateDocumentPdf($document);
         $dompdf = $pdf->getDomPDF();

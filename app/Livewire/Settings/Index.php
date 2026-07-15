@@ -16,6 +16,13 @@ class Index extends Component
     public string $address = '';
     public string $city = '';
     public string $state = '';
+
+    // Bank details (quotation / invoice PDF)
+    public string $bankName = '';
+    public string $bankAccount = '';
+    public string $bankIfsc = '';
+    public string $upiId = '';
+
     public bool $duplicateCheck = true;
     public bool $callLogRestrict = false;
     public bool $leadEditLock = false;
@@ -64,6 +71,10 @@ class Index extends Component
         $this->address = $tenant->address ?? '';
         $this->city = $tenant->city ?? '';
         $this->state = $tenant->state ?? '';
+        $this->bankName = $settings['bank_name'] ?? '';
+        $this->bankAccount = $settings['bank_account'] ?? '';
+        $this->bankIfsc = $settings['bank_ifsc'] ?? '';
+        $this->upiId = $settings['upi_id'] ?? '';
         $this->duplicateCheck = $settings['duplicate_check'] ?? true;
         $this->callLogRestrict = $settings['call_log_restrict'] ?? false;
         $this->leadEditLock = $settings['lead_edit_lock'] ?? false;
@@ -203,6 +214,10 @@ class Index extends Component
                 'whatsapp_number' => $this->whatsappNumber,
                 'whatsapp_templates' => $this->whatsappTemplates,
                 'followup_sound' => $this->followupSound,
+                'bank_name' => trim($this->bankName),
+                'bank_account' => trim($this->bankAccount),
+                'bank_ifsc' => trim($this->bankIfsc),
+                'upi_id' => trim($this->upiId),
                 'zoom_personal_link' => $this->zoomPersonalLink,
                 'meeting_templates' => $this->meetingTemplates,
                 'zoom_account_id' => trim($this->zoomAccountId),

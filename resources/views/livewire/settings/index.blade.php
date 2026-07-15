@@ -15,6 +15,19 @@
                 <input wire:model="city" placeholder="City" class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
                 <input wire:model="state" placeholder="State" class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
             </div>
+
+            <div class="pt-3 border-t dark:border-gray-600 space-y-3">
+                <div>
+                    <h3 class="font-semibold">Bank Details</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Ye details quotation / invoice / proforma PDF pe dikhte hain.</p>
+                </div>
+                <input wire:model="bankName" placeholder="Bank name (e.g. HDFC Bank)" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                <input wire:model="bankAccount" placeholder="Account number" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 font-mono">
+                <div class="grid grid-cols-2 gap-2">
+                    <input wire:model="bankIfsc" placeholder="IFSC code" class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 font-mono uppercase">
+                    <input wire:model="upiId" placeholder="UPI ID (e.g. company@upi)" class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                </div>
+            </div>
         </div>
         <div class="space-y-4">
             <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 space-y-3">

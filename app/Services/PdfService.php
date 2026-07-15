@@ -188,6 +188,8 @@ class PdfService
         $prevGroup = '';
         $rowNum = 0;
         $qtySum = 0.0;
+        $showHsnColumn = false;
+        $showGstColumn = false;
         $showFullDescription = (bool) ($opts['show_description_full_width'] ?? true);
         foreach ($document->items as $item) {
             if ($item->group_name && $item->group_name !== $prevGroup) {
@@ -209,6 +211,16 @@ class PdfService
                 $discLabel = $this->money(0, $currency);
             }
 
+            $hsnValue = trim((string) ($item->hsn_sac ?? ''));
+            if ($hsnValue !== '') {
+                $showHsnColumn = true;
+            }
+
+            $gstRate = (float) ($item->gst_rate ?? 0);
+            if ($isGst && $gstRate > 0) {
+                $showGstColumn = true;
+            }
+
             $rows[] = [
                 'type' => 'item',
                 'num' => $rowNum,
@@ -216,17 +228,23 @@ class PdfService
                 'body' => ($showFullDescription && $item->long_description)
                     ? $this->safeHtml((string) $item->long_description)
                     : '',
-                'hsn' => ($isGst && $item->hsn_sac)
-                    ? ('HSN/SAC: '.$item->hsn_sac.((! empty($opts['show_tax_summary'] ?? true) && (float) $item->gst_rate > 0)
-                        ? ' | GST '.$this->num((float) $item->gst_rate).'%'
-                        : ''))
-                    : '',
+                'hsn' => $hsnValue,
                 'qty' => abs($qty - round($qty)) < 0.00001 ? number_format($qty, 0) : number_format($qty, 2),
                 'unit' => ($item->unit && $item->unit !== 'Nos') ? $item->unit : '',
                 'rate' => $this->money((float) $item->rate, $currency),
                 'discount' => $discLabel,
+                'gst' => $gstRate > 0 ? $this->num($gstRate).'%' : '',
                 'amount' => $this->money((float) $item->line_total, $currency, true),
             ];
+        }
+
+        $colSpan = 5 + ($showHsnColumn ? 1 : 0) + ($showGstColumn ? 1 : 0);
+        if ($showHsnColumn && $showGstColumn) {
+            $colWidths = ['item' => '36%', 'hsn' => '10%', 'qty' => '10%', 'rate' => '11%', 'disc' => '11%', 'gst' => '9%', 'amt' => '13%'];
+        } elseif ($showHsnColumn || $showGstColumn) {
+            $colWidths = ['item' => '42%', 'hsn' => '10%', 'qty' => '10%', 'rate' => '12%', 'disc' => '12%', 'gst' => '9%', 'amt' => '14%'];
+        } else {
+            $colWidths = ['item' => '48%', 'hsn' => '10%', 'qty' => '12%', 'rate' => '13%', 'disc' => '13%', 'gst' => '9%', 'amt' => '14%'];
         }
 
         $totals = [
@@ -242,13 +260,8 @@ class PdfService
         if ((float) $document->discount_amount > 0) {
             $totals[] = ['label' => 'Discount', 'value' => '('.$this->money((float) $document->discount_amount, $currency, true).')', 'class' => 'disc'];
         }
-        $totals[] = ['label' => 'Discounts', 'value' => $this->money(0, $currency, true), 'class' => ''];
-        $totals[] = ['label' => 'Reductions', 'value' => $this->money(0, $currency, true), 'class' => ''];
         if ($isGst && ($opts['show_tax_summary'] ?? true) && (float) $document->total_tax > 0) {
             $totals[] = ['label' => 'Tax (GST)', 'value' => $this->money((float) $document->total_tax, $currency, true), 'class' => ''];
-        }
-        if (empty($opts['hide_place_of_supply']) && $document->place_of_supply) {
-            $totals[] = ['label' => 'Place of Supply', 'value' => $document->place_of_supply, 'class' => ''];
         }
         $totals[] = [
             'label' => 'Total ('.($document->currency ?? 'INR').')',
@@ -266,6 +279,8 @@ class PdfService
             'document' => $document,
             'tenant' => $tenant,
             'themeColor' => $themeColor,
+            'themeLight' => $this->lightenColor($themeColor, 0.90),
+            'themeLightBorder' => $this->lightenColor($themeColor, 0.78),
             'typeLabel' => $typeLabel,
             'isGst' => $isGst,
             'currency' => $currency,
@@ -279,6 +294,10 @@ class PdfService
             'stampImage' => $this->resolveFile($sig['stamp_image'] ?? null),
             'pay' => $pay,
             'rows' => $rows,
+            'showHsnColumn' => $showHsnColumn,
+            'showGstColumn' => $showGstColumn,
+            'colSpan' => $colSpan,
+            'colWidths' => $colWidths,
             'totals' => $totals,
             'bank' => $this->bankDetails($tenant),
             'showBankDetails' => array_key_exists('show_bank_details', $opts)
@@ -378,6 +397,50 @@ class PdfService
         }
 
         return '#7c3aed';
+    }
+
+    /**
+     * Mix hex/rgb color toward white. $amount 0 = original, 1 = pure white.
+     * Used for soft backgrounds / borders derived from theme color.
+     */
+    protected function lightenColor(string $color, float $amount = 0.90): string
+    {
+        $amount = max(0.0, min(1.0, $amount));
+        $rgb = $this->colorToRgb($color);
+        if ($rgb === null) {
+            return '#FFF9F5';
+        }
+
+        $r = (int) round($rgb[0] + (255 - $rgb[0]) * $amount);
+        $g = (int) round($rgb[1] + (255 - $rgb[1]) * $amount);
+        $b = (int) round($rgb[2] + (255 - $rgb[2]) * $amount);
+
+        return sprintf('#%02X%02X%02X', $r, $g, $b);
+    }
+
+    /**
+     * @return array{0:int,1:int,2:int}|null
+     */
+    protected function colorToRgb(string $color): ?array
+    {
+        $color = trim($color);
+        if (preg_match('/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/', $color, $m)) {
+            $hex = $m[1];
+            if (strlen($hex) === 3) {
+                $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            }
+
+            return [
+                hexdec(substr($hex, 0, 2)),
+                hexdec(substr($hex, 2, 2)),
+                hexdec(substr($hex, 4, 2)),
+            ];
+        }
+        if (preg_match('/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/', $color, $m)) {
+            return [(int) $m[1], (int) $m[2], (int) $m[3]];
+        }
+
+        return null;
     }
 
     protected function bankDetails($tenant): array

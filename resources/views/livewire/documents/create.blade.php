@@ -347,8 +347,13 @@
 
             {{-- Additional Info --}}
             <div class="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-                <label class="text-xs font-medium text-gray-500">Additional Info</label>
-                <textarea wire:model="additional_info" rows="3" placeholder="Any extra information for the client..." class="w-full mt-1 px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600"></textarea>
+                <label class="flex items-center gap-2 text-sm cursor-pointer mb-2">
+                    <input type="checkbox" wire:model.live="showAdditionalInfo" class="rounded"> Additional Info
+                </label>
+                @if($showAdditionalInfo)
+                <textarea wire:model="additional_info" rows="3" placeholder="Any extra information for the client..." class="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600"></textarea>
+                <p class="text-[11px] text-gray-400 mt-1">PDF pe dikhega jab checkbox on ho.</p>
+                @endif
             </div>
 
             {{-- Attachments --}}

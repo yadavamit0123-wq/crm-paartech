@@ -58,19 +58,16 @@
         .meta-lines .k { color: #4b5563; padding-right: 10px; white-space: nowrap; }
         .meta-lines .v { color: #111827; font-weight: bold; }
 
-        /* Company logo — clear square (not tiny) */
-        .logo-box {
+        /* Company logo — plain, fills ~110px (no border box) */
+        .logo-wrap {
             width: 110px;
             height: 110px;
-            border: 1px solid #e5e7eb;
-            padding: 8px;
-            text-align: center;
+            text-align: right;
             vertical-align: middle;
-            background: #ffffff;
         }
-        .logo-box img {
-            max-height: 94px;
-            max-width: 94px;
+        .logo-wrap img {
+            max-height: 110px;
+            max-width: 110px;
             width: auto;
             height: auto;
         }
@@ -80,9 +77,10 @@
             color: {{ $themeColor }};
             line-height: 1.25;
             padding-top: 28px;
+            text-align: center;
         }
 
-        /* ========== FROM / FOR (peach boxes) ========== */
+        /* ========== FROM / FOR (theme-tinted boxes) ========== */
         .parties {
             width: 100%;
             border-collapse: collapse;
@@ -91,8 +89,8 @@
         .parties td.box {
             width: 49%;
             vertical-align: top;
-            background-color: #FFF4EC;
-            border: 1px solid #F3E0D0;
+            background-color: {{ $themeLight }};
+            border: 1px solid {{ $themeLightBorder }};
             padding: 10px 12px;
         }
         .parties td.gap { width: 2%; }
@@ -135,10 +133,10 @@
         .items th.r { text-align: right; }
         .items th.c { text-align: center; }
         .items td {
-            background-color: #FFF9F5;
+            background-color: {{ $themeLight }};
             padding: 8px 8px;
             vertical-align: top;
-            border-bottom: 1px solid #F3E0D0;
+            border-bottom: 1px solid {{ $themeLightBorder }};
             font-size: 10px;
             color: #374151;
             word-wrap: break-word;
@@ -162,11 +160,6 @@
             padding: 0;
         }
         .item-body li { margin: 0 0 2px; }
-        .hsn {
-            font-size: 8px;
-            color: #9ca3af;
-            margin-top: 4px;
-        }
         .group td {
             background-color: {{ $themeColor }};
             color: #fff;
@@ -176,11 +169,13 @@
             border-bottom: none;
         }
 
-        .col-item { width: 48%; }
-        .col-qty { width: 12%; }
-        .col-rate { width: 13%; }
-        .col-disc { width: 13%; }
-        .col-amt { width: 14%; }
+        .col-item { width: {{ $colWidths['item'] }}; }
+        .col-hsn { width: {{ $colWidths['hsn'] }}; }
+        .col-qty { width: {{ $colWidths['qty'] }}; }
+        .col-rate { width: {{ $colWidths['rate'] }}; }
+        .col-disc { width: {{ $colWidths['disc'] }}; }
+        .col-gst { width: {{ $colWidths['gst'] }}; }
+        .col-amt { width: {{ $colWidths['amt'] }}; }
 
         /* ========== TOTALS ========== */
         .totals {
@@ -218,8 +213,8 @@
 
         .block {
             margin-top: 10px;
-            background: #FFF9F5;
-            border: 1px solid #F3E0D0;
+            background: {{ $themeLight }};
+            border: 1px solid {{ $themeLightBorder }};
             padding: 8px 10px;
             font-size: 9.5px;
             color: #374151;
@@ -236,7 +231,7 @@
         .bank {
             margin-top: 8px;
             padding: 7px 10px;
-            background: #FFF9F5;
+            background: {{ $themeLight }};
             border-left: 3px solid {{ $themeColor }};
             font-size: 9.5px;
             color: #374151;
@@ -255,7 +250,7 @@
 
 <div class="sheet">
 
-{{-- ========== HEADER: title+meta LEFT | logo box RIGHT ========== --}}
+{{-- ========== HEADER: title+meta LEFT | logo RIGHT ========== --}}
 <table class="hdr">
     <tr>
         <td style="width:70%;">
@@ -291,7 +286,7 @@
         <td style="width:32%;text-align:right;">
             <table style="width:110px;margin-left:auto;border-collapse:collapse;">
                 <tr>
-                    <td class="logo-box">
+                    <td class="logo-wrap">
                         @if(!empty($logoFile))
                         <img src="{{ $logoFile }}" alt="">
                         @else
@@ -304,7 +299,7 @@
     </tr>
 </table>
 
-{{-- ========== FROM / FOR peach boxes ========== --}}
+{{-- ========== FROM / FOR theme-tinted boxes ========== --}}
 <table class="parties">
     <tr>
         <td class="box">
@@ -362,16 +357,22 @@
     <thead>
         <tr>
             <th class="col-item">Item</th>
+            @if($showHsnColumn)
+            <th class="col-hsn c">HSN/SAC</th>
+            @endif
             <th class="col-qty c">Quantity</th>
             <th class="col-rate r">Rate</th>
             <th class="col-disc r">Discount</th>
+            @if($showGstColumn)
+            <th class="col-gst c">GST%</th>
+            @endif
             <th class="col-amt r">Amount</th>
         </tr>
     </thead>
     <tbody>
         @foreach($rows as $row)
             @if($row['type'] === 'group')
-            <tr class="group"><td colspan="5">{{ $row['label'] }}</td></tr>
+            <tr class="group"><td colspan="{{ $colSpan }}">{{ $row['label'] }}</td></tr>
             @else
             <tr>
                 <td>
@@ -379,10 +380,10 @@
                     @if($row['body'] !== '')
                     <div class="item-body">{!! $row['body'] !!}</div>
                     @endif
-                    @if($row['hsn'] !== '')
-                    <div class="hsn">{{ $row['hsn'] }}</div>
-                    @endif
                 </td>
+                @if($showHsnColumn)
+                <td class="c">{{ $row['hsn'] }}</td>
+                @endif
                 <td class="c">
                     {{ $row['qty'] }}
                     @if($row['unit'] !== '')
@@ -391,6 +392,9 @@
                 </td>
                 <td class="r">{{ $row['rate'] }}</td>
                 <td class="r">{{ $row['discount'] }}</td>
+                @if($showGstColumn)
+                <td class="c">{{ $row['gst'] }}</td>
+                @endif
                 <td class="r" style="font-weight:bold;color:#111827;">{{ $row['amount'] }}</td>
             </tr>
             @endif

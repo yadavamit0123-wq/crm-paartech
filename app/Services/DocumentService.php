@@ -299,7 +299,7 @@ class DocumentService
             'payment_options' => array_key_exists('payment_options', $data) ? $data['payment_options'] : $document->payment_options,
             'attachments' => $data['attachments'] ?? $document->attachments,
             'contact_details' => array_key_exists('contact_details', $data) ? $data['contact_details'] : $document->contact_details,
-            'additional_info' => $data['additional_info'] ?? $document->additional_info,
+            'additional_info' => array_key_exists('additional_info', $data) ? $data['additional_info'] : $document->additional_info,
             'additional_charges' => $data['additional_charges'] ?? $document->additional_charges,
             'notes' => array_key_exists('notes', $data) ? $data['notes'] : $document->notes,
             'terms_conditions' => array_key_exists('terms_conditions', $data) ? $data['terms_conditions'] : $document->terms_conditions,

@@ -50,6 +50,7 @@ class Create extends Component
     public string $shipping_address = '';
     public bool $showTerms = true;
     public bool $showNotes = false;
+    public bool $showAdditionalInfo = false;
     public bool $showSignature = false;
     public string $signature_name = '';
     public string $signature_title = '';
@@ -211,6 +212,7 @@ class Create extends Component
         $this->showNotes = filled($this->notes);
         $this->showTerms = filled($this->terms_conditions);
         $this->additional_info = $document->additional_info ?? '';
+        $this->showAdditionalInfo = filled($this->additional_info);
         $this->doc_discount_type = $document->doc_discount_type ?? 'percent';
         $this->doc_discount_value = (float) ($document->doc_discount_value ?? 0);
         $this->additional_charges = $document->additional_charges ?? [];
@@ -816,7 +818,7 @@ class Create extends Component
                 'phone' => $this->contact_phone,
                 'email' => $this->contact_email,
             ] : null,
-            'additional_info' => $this->additional_info ?: null,
+            'additional_info' => $this->showAdditionalInfo ? ($this->additional_info ?: null) : null,
             'notes' => $this->showNotes ? ($this->notes ?: null) : null,
             'terms_conditions' => $this->showTerms ? ($this->terms_conditions ?: null) : null,
             'doc_discount_type' => $this->doc_discount_type,

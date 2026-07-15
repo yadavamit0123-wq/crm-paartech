@@ -16,6 +16,7 @@ use App\Models\LeadTask;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\CustomerService;
+use App\Services\MeetingService;
 use App\Services\ReviewRequestService;
 use App\Support\MeetingTemplates;
 use Illuminate\Support\Carbon;
@@ -419,17 +420,43 @@ class Show extends Component
         $this->dispatch('open-url', url: $url);
     }
 
+    public function createMeeting(MeetingService $meetings): void
+    {
+        if ($this->meetingMode === 'scheduled') {
+            $this->validate(['meetingAt' => 'required|date']);
+        }
+
+        $when = $this->meetingMode === 'scheduled' ? Carbon::parse($this->meetingAt) : now();
+        $tenant = auth()->user()->tenant;
+
+        $result = $meetings->create(
+            $tenant,
+            $this->lead,
+            $this->meetingPlatform,
+            $this->meetingMode,
+            $when
+        );
+
+        $this->meetingLink = $result['link'];
+        $modeLabel = ($result['mode'] ?? 'test') === 'live' ? 'Live API' : 'Free Test Mode';
+        $this->dispatch('notify', message: "Meeting link ready ({$modeLabel})");
+
+        // Scheduled Google test mode: optional calendar template open
+        if (($result['platform'] ?? '') === 'google_meet'
+            && ($result['mode'] ?? '') === 'test'
+            && $this->meetingMode === 'scheduled'
+            && ! empty($result['raw']['calendar_hint'])) {
+            $this->dispatch('open-url', url: $result['raw']['calendar_hint']);
+        }
+    }
+
     public function launchMeetingPlatform(): void
     {
+        // Manual open helpers (optional) — createMeeting preferred
         if ($this->meetingPlatform === 'zoom') {
-            $zoomLink = auth()->user()->tenant->settings['zoom_personal_link'] ?? '';
-            if ($zoomLink) {
-                // Personal meeting link configured — link field bhi prefill kar do
-                $this->meetingLink = $zoomLink;
-                $url = $zoomLink;
-            } else {
-                $url = 'https://zoom.us/start/videomeeting';
-            }
+            $url = filled($this->meetingLink)
+                ? $this->meetingLink
+                : (auth()->user()->tenant->settings['zoom_personal_link'] ?? 'https://zoom.us/start/videomeeting');
         } elseif ($this->meetingMode === 'scheduled' && $this->meetingAt) {
             $start = Carbon::parse($this->meetingAt);
             $end = $start->copy()->addMinutes(45);
@@ -437,21 +464,26 @@ class Show extends Component
                 'action' => 'TEMPLATE',
                 'text' => 'Meeting: '.$this->lead->name.' x '.auth()->user()->tenant->name,
                 'dates' => $start->format('Ymd\THis').'/'.$end->format('Ymd\THis'),
-                'details' => 'Scheduled from CRM for lead '.$this->lead->name.'. Google Meet link is auto-added on save.',
+                'details' => filled($this->meetingLink) ? 'Join: '.$this->meetingLink : 'Scheduled from CRM',
                 'add' => $this->lead->email ?? '',
             ]);
             $url = 'https://calendar.google.com/calendar/render?'.$query;
         } else {
-            $url = 'https://meet.google.com/new';
+            $url = filled($this->meetingLink) ? $this->meetingLink : 'https://meet.google.com/new';
         }
 
         $this->dispatch('open-url', url: $url);
     }
 
-    public function shareMeeting(): void
+    public function shareMeeting(MeetingService $meetings): void
     {
         if (! trim($this->meetingLink)) {
-            $this->dispatch('notify', message: 'Pehle meeting link generate karke yahan paste karein', type: 'error');
+            // Auto-create link if user skipped the generate step
+            $this->createMeeting($meetings);
+        }
+
+        if (! trim($this->meetingLink)) {
+            $this->dispatch('notify', message: 'Meeting link generate nahi hua', type: 'error');
 
             return;
         }
@@ -687,8 +719,9 @@ class Show extends Component
         $products = Schema::hasTable('products')
             ? Product::where('is_active', true)->orderBy('name')->get()
             : collect();
+        $meetingStatus = app(MeetingService::class)->status(auth()->user()->tenant);
 
-        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates', 'whatsappPreviews', 'customFields', 'demos', 'products'))
+        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates', 'whatsappPreviews', 'customFields', 'demos', 'products', 'meetingStatus'))
             ->layout('layouts.app');
     }
 }

@@ -32,6 +32,16 @@ class Index extends Component
     public string $zoomPersonalLink = '';
     public array $meetingTemplates = [];
 
+    // Zoom Server-to-Server OAuth (live)
+    public string $zoomAccountId = '';
+    public string $zoomClientId = '';
+    public string $zoomClientSecret = '';
+
+    // Google Calendar / Meet OAuth (live)
+    public string $googleClientId = '';
+    public string $googleClientSecret = '';
+    public string $googleRefreshToken = '';
+
     // Manage Demos
     public string $demoName = '';
     public string $demoUrl = '';
@@ -64,6 +74,13 @@ class Index extends Component
         $this->followupSound = $this->resolveFollowupSound($settings);
         $this->zoomPersonalLink = $settings['zoom_personal_link'] ?? '';
         $this->meetingTemplates = MeetingTemplates::forTenant($tenant);
+
+        $this->zoomAccountId = $settings['zoom_account_id'] ?? '';
+        $this->zoomClientId = $settings['zoom_client_id'] ?? '';
+        $this->zoomClientSecret = $settings['zoom_client_secret'] ?? '';
+        $this->googleClientId = $settings['google_client_id'] ?? '';
+        $this->googleClientSecret = $settings['google_client_secret'] ?? '';
+        $this->googleRefreshToken = $settings['google_refresh_token'] ?? '';
     }
 
     protected function resolveFollowupSound(array $tenantSettings): bool
@@ -188,6 +205,12 @@ class Index extends Component
                 'followup_sound' => $this->followupSound,
                 'zoom_personal_link' => $this->zoomPersonalLink,
                 'meeting_templates' => $this->meetingTemplates,
+                'zoom_account_id' => trim($this->zoomAccountId),
+                'zoom_client_id' => trim($this->zoomClientId),
+                'zoom_client_secret' => trim($this->zoomClientSecret),
+                'google_client_id' => trim($this->googleClientId),
+                'google_client_secret' => trim($this->googleClientSecret),
+                'google_refresh_token' => trim($this->googleRefreshToken),
             ]),
         ]);
 
@@ -207,8 +230,9 @@ class Index extends Component
     {
         $demos = Schema::hasTable('demos') ? Demo::latest()->get() : collect();
         $templateLabels = MeetingTemplates::labels();
+        $meetingStatus = app(\App\Services\MeetingService::class)->status(auth()->user()->tenant);
 
-        return view('livewire.settings.index', compact('demos', 'templateLabels'))
+        return view('livewire.settings.index', compact('demos', 'templateLabels', 'meetingStatus'))
             ->layout('layouts.app');
     }
 }

@@ -57,8 +57,17 @@
                 <h3 class="font-semibold">📅 Meeting Settings</h3>
                 <button wire:click="resetMeetingTemplates" class="text-xs text-indigo-600 hover:underline">Reset defaults</button>
             </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+                <span class="px-2 py-1 rounded-full {{ ($meetingStatus['google_meet']['mode'] ?? '') === 'live' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
+                    Google Meet: {{ $meetingStatus['google_meet']['label'] ?? 'Free Test Mode' }}
+                </span>
+                <span class="px-2 py-1 rounded-full {{ ($meetingStatus['zoom']['mode'] ?? '') === 'live' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
+                    Zoom: {{ $meetingStatus['zoom']['label'] ?? 'Free Test Mode' }}
+                </span>
+            </div>
+            <p class="text-xs text-gray-500">Abhi <strong>Free Test Mode</strong> chal raha hai — meeting link CRM khud generate karega. Live API chahiye toh neeche credentials paste karke Save karo.</p>
             <div>
-                <label class="text-xs text-gray-500 block mb-1">Zoom personal meeting link (optional)</label>
+                <label class="text-xs text-gray-500 block mb-1">Zoom personal meeting link (test fallback / optional)</label>
                 <input wire:model="zoomPersonalLink" placeholder="https://zoom.us/j/1234567890" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm">
             </div>
             <p class="text-xs text-gray-500">Invite templates — placeholders: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">{name}</code> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">{date}</code> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">{time}</code> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">{link}</code> <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">{company}</code></p>
@@ -74,6 +83,54 @@
                 </div>
                 @endforeach
             </div>
+        </div>
+    </div>
+
+    {{-- Meeting API Credentials (Live) --}}
+    <div class="grid lg:grid-cols-2 gap-6 mt-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <h3 class="font-semibold">🔵 Zoom API Credentials (Live)</h3>
+                <span class="text-[10px] px-2 py-0.5 rounded-full {{ ($meetingStatus['zoom']['mode'] ?? '') === 'live' ? 'bg-green-100 text-green-700' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300' }}">
+                    {{ ($meetingStatus['zoom']['mode'] ?? '') === 'live' ? 'CONNECTED' : 'EMPTY — Test Mode' }}
+                </span>
+            </div>
+            <p class="text-xs text-gray-500">Zoom Marketplace → Build App → <strong>Server-to-Server OAuth</strong>. Scope: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">meeting:write:admin</code>. Teeno fields bharte hi Live Zoom meetings banegi.</p>
+            <div>
+                <label class="text-xs text-gray-500 block mb-1">Account ID</label>
+                <input wire:model="zoomAccountId" placeholder="Zoom Account ID" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono">
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 block mb-1">Client ID</label>
+                <input wire:model="zoomClientId" placeholder="Zoom Client ID" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono">
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 block mb-1">Client Secret</label>
+                <input type="password" wire:model="zoomClientSecret" placeholder="Zoom Client Secret" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono" autocomplete="new-password">
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <h3 class="font-semibold">🟢 Google Meet / Calendar Credentials (Live)</h3>
+                <span class="text-[10px] px-2 py-0.5 rounded-full {{ ($meetingStatus['google_meet']['mode'] ?? '') === 'live' ? 'bg-green-100 text-green-700' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300' }}">
+                    {{ ($meetingStatus['google_meet']['mode'] ?? '') === 'live' ? 'CONNECTED' : 'EMPTY — Test Mode' }}
+                </span>
+            </div>
+            <p class="text-xs text-gray-500">Google Cloud Console → enable <strong>Google Calendar API</strong> → OAuth Client (Web). Phir OAuth Playground / app se Refresh Token generate karke yahan paste karo. Teeno fields bharte hi Live Meet link Calendar se banegi.</p>
+            <div>
+                <label class="text-xs text-gray-500 block mb-1">Client ID</label>
+                <input wire:model="googleClientId" placeholder="xxxx.apps.googleusercontent.com" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono">
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 block mb-1">Client Secret</label>
+                <input type="password" wire:model="googleClientSecret" placeholder="Google Client Secret" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono" autocomplete="new-password">
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 block mb-1">Refresh Token</label>
+                <textarea wire:model="googleRefreshToken" rows="2" placeholder="1//0gxxxxxxxx..." class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono"></textarea>
+            </div>
+            <p class="text-[11px] text-gray-400">Tip: credentials empty chhodoge toh Free Test Mode automatically chalti rahegi — CRM meeting link khud generate karega.</p>
         </div>
     </div>
 

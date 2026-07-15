@@ -448,6 +448,10 @@
 
     {{-- Schedule Meeting modal --}}
     @if($showMeetingModal)
+    @php
+        $meetModeKey = $meetingPlatform === 'zoom' ? 'zoom' : 'google_meet';
+        $meetModeInfo = $meetingStatus[$meetModeKey] ?? ['mode' => 'test', 'label' => 'Free Test Mode'];
+    @endphp
     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-2">
@@ -457,6 +461,9 @@
             <div class="flex flex-wrap gap-2 text-xs mb-4">
                 <span class="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">📱 {{ $lead->phone ?? 'No phone' }}</span>
                 <span class="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">✉️ {{ $lead->email ?? 'No email' }}</span>
+                <span class="px-2 py-1 rounded-full {{ ($meetModeInfo['mode'] ?? '') === 'live' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
+                    {{ $meetModeInfo['label'] ?? 'Free Test Mode' }}
+                </span>
             </div>
 
             <div class="space-y-3">
@@ -488,19 +495,24 @@
 
                 <div class="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 space-y-2">
                     <p class="text-xs text-gray-500">
-                        <span class="font-semibold">Step 1:</span>
-                        @if($meetingPlatform === 'zoom')
-                        Zoom open hoga — meeting start karke invite link copy karein. (Settings me Zoom personal link set hai toh wahi use hoga.)
-                        @elseif($meetingMode === 'scheduled')
-                        Google Calendar event template khulega — save karte hi Meet link auto-create hota hai, use copy karein.
+                        @if(($meetModeInfo['mode'] ?? '') === 'live')
+                        <span class="font-semibold text-green-700">Live API connected</span> — ek click me real {{ $meetingPlatform === 'zoom' ? 'Zoom' : 'Google Meet' }} meeting banegi.
                         @else
-                        Google Meet new meeting khulega — link copy karein.
+                        <span class="font-semibold text-amber-700">Free Test Mode</span> — CRM abhi free test link generate karega (paste nahi karna). Live chahiye toh Settings → Meeting API Credentials me keys save karo.
                         @endif
                     </p>
-                    <button wire:click="launchMeetingPlatform" class="w-full px-3 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg text-sm">
-                        🔗 Open {{ $meetingPlatform === 'zoom' ? 'Zoom' : ($meetingMode === 'scheduled' ? 'Google Calendar (Meet)' : 'Google Meet') }}
+                    <button wire:click="createMeeting" wire:loading.attr="disabled" class="w-full px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">
+                        <span wire:loading.remove wire:target="createMeeting">✨ Create Meeting Link</span>
+                        <span wire:loading wire:target="createMeeting">Creating…</span>
                     </button>
-                    <p class="text-xs text-gray-500"><span class="font-semibold">Step 2:</span> Meeting link yahan paste karein:</p>
+                    @if($meetingLink)
+                    <div class="rounded-lg border dark:border-gray-600 bg-white dark:bg-gray-800 p-2">
+                        <p class="text-[11px] text-gray-500 mb-1">Meeting link ready:</p>
+                        <a href="{{ $meetingLink }}" target="_blank" class="text-sm text-indigo-600 break-all hover:underline">{{ $meetingLink }}</a>
+                        <button type="button" wire:click="launchMeetingPlatform" class="mt-2 w-full px-3 py-1.5 border rounded-lg text-xs">Open link</button>
+                    </div>
+                    @endif
+                    <p class="text-[11px] text-gray-400">Manual override (optional):</p>
                     <input type="url" wire:model="meetingLink" placeholder="https://meet.google.com/abc-defg-hij" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm">
                 </div>
 
@@ -521,7 +533,7 @@
                 <button wire:click="$set('showMeetingModal', false)" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
                 <button wire:click="shareMeeting" class="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium">Share Invite & Log</button>
             </div>
-            <p class="text-xs text-gray-400 mt-2">Scheduled meeting par reminder bhi set ho jayega. Templates: Settings → Meeting Settings.</p>
+            <p class="text-xs text-gray-400 mt-2">Link empty ho toh Share pe click karte hi auto-create ho jayega. Templates: Settings → Meeting Settings.</p>
         </div>
     </div>
     @endif

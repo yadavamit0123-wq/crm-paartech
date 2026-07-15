@@ -13,9 +13,9 @@
             line-height: 1.45;
         }
 
-        /* Details-card jaisa outer boarder */
+        /* Details-card jaisa outer boarder — thicker */
         .sheet {
-            border: 1px solid #e5e7eb;
+            border: 3px solid #9ca3af;
             border-radius: 8px;
             padding: 16px 14px;
         }

@@ -29,7 +29,8 @@ class PdfService
     }
 
     /**
-     * Render + stamp "Page X of Y" like the sample footer (right side).
+     * Render + stamp "Page X of Y" in the sample footer (bottom-right).
+     * DomPDF canvas: origin bottom-left, y increases UP — low y = footer.
      */
     public function renderedPdfOutput(Document $document): string
     {
@@ -38,10 +39,25 @@ class PdfService
         $dompdf->render();
 
         $canvas = $dompdf->getCanvas();
-        $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans', 'bold')
+            ?: $fontMetrics->getFont('DejaVu Sans', 'normal');
+
         if ($canvas && $font) {
-            // A4 points (~595×842); bottom-right near sample footer meta row
-            $canvas->page_text(472, 798, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 8, [0.17, 0.24, 0.31]);
+            $width = $canvas->get_width();
+            // ~18mm from bottom — HTML footer meta row ke right column me
+            $yFromBottom = 50;
+            $size = 8;
+            // Approximate right-align (A4 ~595pt; leave ~14mm right margin)
+            $x = $width - 100;
+            $canvas->page_text(
+                $x,
+                $yFromBottom,
+                'Page {PAGE_NUM} of {PAGE_COUNT}',
+                $font,
+                $size,
+                [0.17, 0.24, 0.31]
+            );
         }
 
         return $dompdf->output();

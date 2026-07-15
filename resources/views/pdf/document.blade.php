@@ -6,17 +6,12 @@
     <style>
         /*
          * Sample Quotation layout (A4):
-         * - ~20mm free white margin around page
-         * - Thin grey outliner around content
-         * - Logo top-right in light box
-         * - Title + meta left
-         * - Peach From / For boxes
-         * - Orange table header (repeats)
-         * - Footer every page: No | Date | For | Page X of Y + small disclaimer
+         * Footer MUST sit in bottom page margin (DomPDF fixed) — every page.
          */
         @@page {
             size: A4 portrait;
-            margin: 18mm 16mm 26mm 16mm;
+            /* Bottom margin = footer height + breathing room */
+            margin: 14mm 14mm 32mm 14mm;
         }
 
         * { margin: 0; padding: 0; }
@@ -34,31 +29,47 @@
             padding: 14px 14px 12px;
         }
 
-        /* ========== FOOTER (fixed → har page) ========== */
+        /*
+         * SAMPLE FOOTER — har page (DomPDF):
+         * position:fixed + bottom negative = @page margin zone me dikhe
+         * dashed line | No / Date / For | Page X of Y
+         * disclaimer left | Powered by Nexpaar right
+         */
         .page-footer {
             position: fixed;
             left: 0;
             right: 0;
-            bottom: -20mm;
-            height: 18mm;
+            bottom: -28mm;
+            height: 26mm;
+            z-index: 1000;
         }
         .page-footer .rule {
-            border-top: 1px dashed #d1d5db;
-            margin-bottom: 5px;
+            border-top: 1px dashed #c4c4c4;
+            margin: 0 0 6px 0;
+            height: 0;
         }
         .page-footer .meta {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
         .page-footer .meta td {
             vertical-align: top;
-            width: 25%;
-            padding-right: 6px;
+            padding: 0 8px 0 0;
         }
+        .page-footer .meta td:last-child {
+            padding-right: 0;
+            text-align: right;
+            width: 18%;
+        }
+        .page-footer .meta td.col-no { width: 22%; }
+        .page-footer .meta td.col-date { width: 24%; }
+        .page-footer .meta td.col-for { width: 36%; }
         .page-footer .lbl {
             font-size: 7px;
             color: #9ca3af;
             line-height: 1.2;
+            font-weight: normal;
         }
         .page-footer .val {
             font-size: 9px;
@@ -66,16 +77,25 @@
             color: #111827;
             margin-top: 1px;
             word-wrap: break-word;
+            line-height: 1.25;
+        }
+        .page-footer .pagenum {
+            font-size: 9px;
+            font-weight: bold;
+            color: #111827;
+            padding-top: 9px;
+            text-align: right;
         }
         .page-footer .bottom-row {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 4px;
+            margin-top: 5px;
         }
         .page-footer .disclaimer {
             font-size: 6.5px;
-            color: #9ca3af;
+            color: #6b7280;
             font-style: italic;
+            line-height: 1.3;
         }
         .powered {
             text-align: right;
@@ -83,33 +103,23 @@
         }
         .powered-label {
             font-size: 6.5px;
-            /* Nexpaar brand — fixed dark indigo (quotation theme ignore) */
             color: #1e1b4b;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            letter-spacing: 0.4px;
             vertical-align: middle;
             font-weight: 600;
         }
         .powered-mark {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             vertical-align: middle;
-            margin: 0 4px;
+            margin: 0 3px;
         }
         .powered-name {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: bold;
-            /* Nexpaar brand violet — quotation theme_color se kabhi change nahi */
             color: #7c3aed;
-            letter-spacing: 0.9px;
+            letter-spacing: 0.8px;
             vertical-align: middle;
-        }
-        .pagenum-slot {
-            text-align: right;
-            font-size: 9px;
-            font-weight: bold;
-            color: #111827;
-            padding-top: 10px;
         }
 
         /* ========== HEADER ========== */
@@ -336,37 +346,35 @@
 </head>
 <body>
 
-{{-- ========== SAMPLE FOOTER — every page ========== --}}
+{{-- ========== SAMPLE FOOTER — every page (visible in @page bottom margin) ========== --}}
 <div class="page-footer">
     <div class="rule"></div>
     <table class="meta">
         <tr>
-            <td>
+            <td class="col-no">
                 <div class="lbl">{{ $typeLabel }} No</div>
                 <div class="val">{{ $document->document_number }}</div>
             </td>
-            <td>
+            <td class="col-date">
                 <div class="lbl">{{ $typeLabel }} Date</div>
                 <div class="val">{{ optional($document->issue_date)->format('d M Y') }}</div>
             </td>
-            <td>
+            <td class="col-for">
                 <div class="lbl">{{ $typeLabel }} For</div>
                 <div class="val">{{ $document->customer_name }}</div>
             </td>
             <td>
-                <div class="lbl" style="text-align:right;">&nbsp;</div>
-                <div class="pagenum-slot">
-                    {{-- filled by DomPDF page_text --}}
-                </div>
+                {{-- Page X of Y canvas se stamp hota hai (is slot ke andar) --}}
+                <div class="pagenum">&nbsp;</div>
             </td>
         </tr>
     </table>
     <table class="bottom-row">
         <tr>
-            <td style="width:60%;vertical-align:middle;">
+            <td style="width:58%;vertical-align:middle;">
                 <div class="disclaimer">This is an electronically generated document, no signature is required.</div>
             </td>
-            <td style="width:40%;vertical-align:middle;" class="powered">
+            <td style="width:42%;vertical-align:middle;" class="powered">
                 @if(!empty($showPoweredByNexpaar))
                 <span class="powered-label">Powered by</span>
                 @if(!empty($nexpaarMark))

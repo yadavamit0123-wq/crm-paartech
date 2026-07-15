@@ -471,11 +471,10 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
                 <h3 class="font-semibold text-sm mb-3">Advanced Options</h3>
                 <div class="grid md:grid-cols-2 gap-2 text-sm">
-                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.show_description_full_width" class="rounded"> Show description in full width</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.show_description_full_width" class="rounded"> Show full item description in PDF</label>
                     <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.hide_place_of_supply" class="rounded"> Hide place of supply</label>
                     <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.show_tax_summary" class="rounded"> Show tax summary in PDF</label>
-                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.show_sku" class="rounded"> Show SKU in line items</label>
-                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.summarise_quantity" class="rounded"> Summarise quantity totals</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.summarise_quantity" class="rounded"> Show total quantity in PDF</label>
                     <label class="flex items-center gap-2 md:col-span-2"><input type="checkbox" wire:model="advanced_options.show_powered_by_nexpaar" class="rounded"> Show “Powered by Nexpaar” in PDF footer</label>
                 </div>
             </div>

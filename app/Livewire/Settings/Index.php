@@ -125,7 +125,7 @@ class Index extends Component
         ]);
 
         if (! Schema::hasTable('demos')) {
-            $this->dispatch('notify', message: 'Demos table abhi ready nahi hai (deploy pending)', type: 'error');
+            $this->dispatch('notify', message: 'Demos table abhi ready nahi hai. Server pe chalao: php artisan migrate --force', type: 'error');
 
             return;
         }

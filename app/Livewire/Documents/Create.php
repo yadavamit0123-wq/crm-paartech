@@ -76,7 +76,6 @@ class Create extends Component
         'show_description_full_width' => true,
         'hide_place_of_supply' => false,
         'show_tax_summary' => true,
-        'show_sku' => false,
         'summarise_quantity' => false,
         'show_powered_by_nexpaar' => true,
     ];

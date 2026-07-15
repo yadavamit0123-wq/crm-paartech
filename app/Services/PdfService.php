@@ -114,6 +114,8 @@ class PdfService
         $rows = [];
         $prevGroup = '';
         $rowNum = 0;
+        $qtySum = 0.0;
+        $showFullDescription = (bool) ($opts['show_description_full_width'] ?? true);
         foreach ($document->items as $item) {
             if ($item->group_name && $item->group_name !== $prevGroup) {
                 $rows[] = ['type' => 'group', 'label' => $item->group_name];
@@ -121,6 +123,7 @@ class PdfService
             }
             $rowNum++;
             $qty = (float) $item->quantity;
+            $qtySum += $qty;
             $discAmt = (float) ($item->discount_amount ?? 0);
             $discPct = (float) ($item->discount_percent ?? 0);
             $discType = $item->discount_type ?? 'fixed';
@@ -137,7 +140,7 @@ class PdfService
                 'type' => 'item',
                 'num' => $rowNum,
                 'title' => $item->description,
-                'body' => $item->long_description
+                'body' => ($showFullDescription && $item->long_description)
                     ? $this->safeHtml((string) $item->long_description)
                     : '',
                 'hsn' => ($isGst && $item->hsn_sac)
@@ -156,6 +159,13 @@ class PdfService
         $totals = [
             ['label' => 'Sub Total', 'value' => $this->money((float) $document->subtotal, $currency, true), 'class' => ''],
         ];
+        if (! empty($opts['summarise_quantity'])) {
+            $totals[] = [
+                'label' => 'Total Quantity',
+                'value' => abs($qtySum - round($qtySum)) < 0.00001 ? number_format($qtySum, 0) : number_format($qtySum, 2),
+                'class' => '',
+            ];
+        }
         if ((float) $document->discount_amount > 0) {
             $totals[] = ['label' => 'Discount', 'value' => '('.$this->money((float) $document->discount_amount, $currency, true).')', 'class' => 'disc'];
         }

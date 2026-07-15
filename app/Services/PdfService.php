@@ -187,6 +187,7 @@ class PdfService
             'isGst' => $isGst,
             'currency' => $currency,
             'logoFile' => $this->resolveFile($document->logo_path),
+            'nexparMark' => $this->resolveFile(public_path('images/nexpar-mark.png')),
             'qrFile' => $this->resolveFile($pay['qr_image'] ?? null),
             'sig' => $sig,
             'sigImage' => $this->resolveFile($sig['signature_image'] ?? null),
@@ -200,6 +201,10 @@ class PdfService
             'words' => $document->total_in_words ? strtoupper((string) $document->total_in_words) : '',
             'showTaxSummary' => (bool) ($opts['show_tax_summary'] ?? true),
             'hidePlaceOfSupply' => ! empty($opts['hide_place_of_supply']),
+            // Checkbox: PDF footer me "Powered by Nexpar" dikhana ya nahi
+            'showPoweredByNexpar' => array_key_exists('show_powered_by_nexpar', $opts)
+                ? (bool) $opts['show_powered_by_nexpar']
+                : true,
         ];
     }
 

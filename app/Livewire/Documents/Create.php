@@ -78,6 +78,7 @@ class Create extends Component
         'show_tax_summary' => true,
         'show_sku' => false,
         'summarise_quantity' => false,
+        'show_powered_by_nexpaar' => true,
     ];
 
     public function mount(?Document $document = null): void
@@ -209,7 +210,12 @@ class Create extends Component
         $this->doc_discount_type = $document->doc_discount_type ?? 'percent';
         $this->doc_discount_value = (float) ($document->doc_discount_value ?? 0);
         $this->additional_charges = $document->additional_charges ?? [];
-        $this->advanced_options = array_merge($this->advanced_options, $document->advanced_options ?? []);
+        $loadedOpts = $document->advanced_options ?? [];
+        // Old key → Nexpaar spelling
+        if (array_key_exists('show_powered_by_nexpar', $loadedOpts) && ! array_key_exists('show_powered_by_nexpaar', $loadedOpts)) {
+            $loadedOpts['show_powered_by_nexpaar'] = (bool) $loadedOpts['show_powered_by_nexpar'];
+        }
+        $this->advanced_options = array_merge($this->advanced_options, $loadedOpts);
         $this->shipping_address = $document->shipping_details['address'] ?? '';
         $this->showShipping = ! empty($this->shipping_address);
         $this->logo_path = $document->logo_path;

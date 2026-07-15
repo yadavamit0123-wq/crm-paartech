@@ -16,7 +16,7 @@
          */
         @@page {
             size: A4 portrait;
-            margin: 18mm 16mm 24mm 16mm;
+            margin: 18mm 16mm 26mm 16mm;
         }
 
         * { margin: 0; padding: 0; }
@@ -39,8 +39,8 @@
             position: fixed;
             left: 0;
             right: 0;
-            bottom: -18mm;
-            height: 16mm;
+            bottom: -20mm;
+            height: 18mm;
         }
         .page-footer .rule {
             border-top: 1px dashed #d1d5db;
@@ -67,11 +67,39 @@
             margin-top: 1px;
             word-wrap: break-word;
         }
-        .page-footer .disclaimer {
+        .page-footer .bottom-row {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 4px;
+        }
+        .page-footer .disclaimer {
             font-size: 6.5px;
             color: #9ca3af;
             font-style: italic;
+        }
+        .powered {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .powered-label {
+            font-size: 6.5px;
+            color: #9ca3af;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            vertical-align: middle;
+        }
+        .powered-mark {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin: 0 3px;
+        }
+        .powered-name {
+            font-size: 10px;
+            font-weight: bold;
+            color: #4c1d95;
+            letter-spacing: 0.8px;
+            vertical-align: middle;
         }
         .pagenum-slot {
             text-align: right;
@@ -110,20 +138,28 @@
         .meta-lines .k { color: #4b5563; padding-right: 10px; white-space: nowrap; }
         .meta-lines .v { color: #111827; font-weight: bold; }
 
+        /* Company logo — clear square (not tiny) */
         .logo-box {
+            width: 110px;
+            height: 110px;
             border: 1px solid #e5e7eb;
-            padding: 8px 10px;
+            padding: 8px;
             text-align: center;
+            vertical-align: middle;
+            background: #ffffff;
         }
         .logo-box img {
-            max-height: 48px;
-            max-width: 140px;
+            max-height: 94px;
+            max-width: 94px;
+            width: auto;
+            height: auto;
         }
         .logo-fallback {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: {{ $themeColor }};
-            max-width: 140px;
+            line-height: 1.25;
+            padding-top: 28px;
         }
 
         /* ========== FROM / FOR (peach boxes) ========== */
@@ -322,7 +358,22 @@
             </td>
         </tr>
     </table>
-    <div class="disclaimer">This is an electronically generated document, no signature is required.</div>
+    <table class="bottom-row">
+        <tr>
+            <td style="width:60%;vertical-align:middle;">
+                <div class="disclaimer">This is an electronically generated document, no signature is required.</div>
+            </td>
+            <td style="width:40%;vertical-align:middle;" class="powered">
+                @if(!empty($showPoweredByNexpar))
+                <span class="powered-label">Powered by</span>
+                @if(!empty($nexparMark))
+                <img src="{{ $nexparMark }}" class="powered-mark" alt="">
+                @endif
+                <span class="powered-name">Nexpar</span>
+                @endif
+            </td>
+        </tr>
+    </table>
 </div>
 
 <div class="sheet">
@@ -360,14 +411,18 @@
                 @endif
             </table>
         </td>
-        <td style="width:30%;text-align:right;">
-            <div class="logo-box">
-                @if(!empty($logoFile))
-                <img src="{{ $logoFile }}" alt="">
-                @else
-                <div class="logo-fallback">{{ $tenant->name ?? '' }}</div>
-                @endif
-            </div>
+        <td style="width:32%;text-align:right;">
+            <table style="width:110px;margin-left:auto;border-collapse:collapse;">
+                <tr>
+                    <td class="logo-box">
+                        @if(!empty($logoFile))
+                        <img src="{{ $logoFile }}" alt="">
+                        @else
+                        <div class="logo-fallback">{{ $tenant->name ?? '' }}</div>
+                        @endif
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 </table>

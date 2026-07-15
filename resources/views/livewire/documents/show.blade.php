@@ -93,10 +93,12 @@
                 <button @click="view = 'details'" :class="view === 'details' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300'" class="px-4 py-1.5 rounded-md text-sm font-medium transition">Details</button>
             </div>
 
-            {{-- Exact PDF preview — bilkul wahi jo download hota hai --}}
-            <div x-show="view === 'pdf'" class="bg-gray-200 dark:bg-gray-900 rounded-xl border dark:border-gray-700 overflow-hidden p-4 sm:p-6">
-                <div class="mx-auto max-w-4xl bg-white shadow-sm rounded-sm overflow-hidden">
-                    <iframe src="{{ route('leads.documents.pdf', $document) }}#toolbar=0&view=FitH" class="w-full bg-white" style="height: 78vh; border: 0;" title="PDF Preview"></iframe>
+            {{-- Preview: margin sirf is box ke andar — PDF/A4 par alag margin nahi --}}
+            <div x-show="view === 'pdf'" class="bg-gray-100 dark:bg-gray-900 rounded-xl border dark:border-gray-700 overflow-hidden">
+                <div style="padding: 20mm;">
+                    <div class="mx-auto max-w-4xl bg-white shadow-md rounded-sm overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700">
+                        <iframe src="{{ route('leads.documents.pdf', $document) }}#toolbar=0&view=FitH" class="w-full bg-white block" style="height: 72vh; border: 0;" title="PDF Preview"></iframe>
+                    </div>
                 </div>
             </div>
 

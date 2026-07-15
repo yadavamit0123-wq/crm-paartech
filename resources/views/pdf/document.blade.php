@@ -4,7 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $document->document_number }}</title>
     <style>
-        @@page { size: A4 portrait; margin: 20mm; }
+        @@page { size: A4 portrait; margin: 16mm 14mm 16mm 14mm; }
         * { margin: 0; padding: 0; }
         body {
             font-family: DejaVu Sans, sans-serif;

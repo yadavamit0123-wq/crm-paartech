@@ -83,23 +83,25 @@
         }
         .powered-label {
             font-size: 6.5px;
-            color: #9ca3af;
-            letter-spacing: 0.4px;
+            /* Nexpaar brand — fixed dark indigo (quotation theme ignore) */
+            color: #1e1b4b;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
             vertical-align: middle;
+            font-weight: 600;
         }
         .powered-mark {
-            width: 14px;
-            height: 14px;
+            width: 18px;
+            height: 18px;
             vertical-align: middle;
-            margin: 0 3px;
+            margin: 0 4px;
         }
         .powered-name {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
-            /* Nexpaar brand color — quotation theme_color se kabhi change nahi */
-            color: #4f46e5;
-            letter-spacing: 0.8px;
+            /* Nexpaar brand violet — quotation theme_color se kabhi change nahi */
+            color: #7c3aed;
+            letter-spacing: 0.9px;
             vertical-align: middle;
         }
         .pagenum-slot {

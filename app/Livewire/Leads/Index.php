@@ -3,11 +3,14 @@
 namespace App\Livewire\Leads;
 
 use App\Models\Lead;
+use App\Models\LeadForward;
 use App\Models\LeadLabel;
 use App\Models\LeadList;
 use App\Models\LeadStage;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\LeadQueryService;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -57,6 +60,14 @@ class Index extends Component
 
     public string $newLabelName = '';
     public string $newLabelColor = '#6366f1';
+
+    // Row actions: transfer + quotation
+    public ?int $actionLeadId = null;
+    public bool $showTransferModal = false;
+    public ?int $transferTo = null;
+    public string $transferNote = '';
+    public bool $showQuoteModal = false;
+    public array $quoteProducts = [];
 
     public array $visibleColumns = [
         'client', 'label', 'status', 'actions', 'source', 'created', 'phone', 'assigned', 'service',
@@ -291,6 +302,92 @@ class Index extends Component
         $lead->logActivity('whatsapp', 'WhatsApp opened from leads list');
     }
 
+    public function deleteLead(int $leadId): void
+    {
+        if (! auth()->user()->hasPermission('leads.delete')) {
+            $this->dispatch('notify', message: 'Delete permission nahi hai', type: 'error');
+
+            return;
+        }
+
+        $lead = Lead::findOrFail($leadId);
+        $lead->logActivity('deleted', 'Lead deleted from leads list');
+        $lead->delete();
+        $this->dispatch('notify', message: 'Lead deleted');
+    }
+
+    public function openTransfer(int $leadId): void
+    {
+        if (! auth()->user()->hasPermission('leads.forward')) {
+            $this->dispatch('notify', message: 'Forward permission nahi hai', type: 'error');
+
+            return;
+        }
+
+        $this->actionLeadId = $leadId;
+        $this->transferTo = null;
+        $this->transferNote = '';
+        $this->showTransferModal = true;
+    }
+
+    public function transferLead(): void
+    {
+        if (! auth()->user()->hasPermission('leads.forward') || ! $this->actionLeadId) {
+            return;
+        }
+
+        $this->validate([
+            'transferTo' => 'required|exists:users,id',
+            'transferNote' => 'nullable|string|max:1000',
+        ]);
+
+        $lead = Lead::findOrFail($this->actionLeadId);
+        $toUser = User::findOrFail($this->transferTo);
+
+        LeadForward::create([
+            'tenant_id' => $lead->tenant_id,
+            'lead_id' => $lead->id,
+            'from_user_id' => auth()->id(),
+            'to_user_id' => $toUser->id,
+            'note' => $this->transferNote ?: null,
+        ]);
+
+        $lead->update(['assigned_to' => $toUser->id]);
+        $lead->logActivity('forward', "Transferred to {$toUser->name}", $this->transferNote ?: null);
+
+        $this->showTransferModal = false;
+        $this->actionLeadId = null;
+        $this->dispatch('notify', message: "Lead transferred to {$toUser->name}");
+    }
+
+    public function openQuote(int $leadId): void
+    {
+        if (! auth()->user()->hasPermission('documents.create')) {
+            $this->dispatch('notify', message: 'Documents create permission nahi hai', type: 'error');
+
+            return;
+        }
+
+        $this->actionLeadId = $leadId;
+        $this->quoteProducts = [];
+        $this->showQuoteModal = true;
+    }
+
+    public function createQuotation()
+    {
+        if (! auth()->user()->hasPermission('documents.create') || ! $this->actionLeadId) {
+            return;
+        }
+
+        $params = ['lead_id' => $this->actionLeadId, 'type' => 'quotation'];
+        $ids = array_filter(array_map('intval', $this->quoteProducts));
+        if ($ids) {
+            $params['products'] = implode(',', $ids);
+        }
+
+        return $this->redirect(route('leads.documents.create', $params));
+    }
+
     public function createLabel(): void
     {
         if (! auth()->user()->hasPermission('leads.edit')) {
@@ -432,6 +529,10 @@ class Index extends Component
             $leads = $query->get()->groupBy('lead_stage_id');
         }
 
+        $quoteModalProducts = ($this->showQuoteModal && Schema::hasTable('products'))
+            ? Product::where('is_active', true)->orderBy('name')->get()
+            : collect();
+
         $columnOptions = [
             'client' => 'Client Name',
             'label' => 'Label',
@@ -444,7 +545,7 @@ class Index extends Component
             'service' => 'Service Type',
         ];
 
-        return view('livewire.leads.index', compact('stages', 'labels', 'leadLists', 'leads', 'employees', 'stats', 'duplicatePhones', 'columnOptions'))
+        return view('livewire.leads.index', compact('stages', 'labels', 'leadLists', 'leads', 'employees', 'stats', 'duplicatePhones', 'columnOptions', 'quoteModalProducts'))
             ->layout('layouts.app');
     }
 }

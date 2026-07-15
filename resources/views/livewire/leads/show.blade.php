@@ -55,6 +55,11 @@
                 @if($lead->phone)
                 <a href="sms:{{ $lead->phone }}" wire:click="logAction('sms')" class="w-11 h-11 rounded-full bg-sky-400 text-white flex items-center justify-center hover:opacity-90 shadow" title="SMS">📱</a>
                 @endif
+                @if(auth()->user()->hasPermission('documents.create'))
+                <button type="button" wire:click="$set('showQuotationModal', true)" class="w-11 h-11 rounded-full bg-violet-600 text-white flex items-center justify-center hover:opacity-90 shadow" title="Create Quotation">🧾</button>
+                @endif
+                <button type="button" wire:click="$set('showDemoModal', true)" class="w-11 h-11 rounded-full bg-cyan-600 text-white flex items-center justify-center hover:opacity-90 shadow" title="Send Demo">🖥️</button>
+                <button type="button" wire:click="$set('showMeetingModal', true)" class="w-11 h-11 rounded-full bg-amber-500 text-white flex items-center justify-center hover:opacity-90 shadow" title="Schedule Meeting">📅</button>
                 <button wire:click="$set('showEditModal', true)" class="w-11 h-11 rounded-full bg-gray-600 text-white flex items-center justify-center hover:opacity-90 shadow" title="Edit">✏️</button>
             </div>
         </div>
@@ -363,6 +368,160 @@
                 <button wire:click="$set('showActivityModal', false)" class="px-4 py-2 border rounded-lg">Cancel</button>
                 <button wire:click="addCustomActivity" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg">Save</button>
             </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Create Quotation modal --}}
+    @if($showQuotationModal)
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-semibold">Create Quotation — {{ $lead->name }}</h3>
+                <button wire:click="$set('showQuotationModal', false)" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Products select karein — quotation pre-filled items ke saath khulega.</p>
+            @if($products->count())
+            <div class="space-y-1.5 max-h-56 overflow-y-auto mb-3">
+                @foreach($products as $product)
+                <label class="flex items-center justify-between gap-2 p-2.5 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10" wire:key="qp-{{ $product->id }}">
+                    <span class="flex items-center gap-2 text-sm min-w-0">
+                        <input type="checkbox" wire:model="quoteProducts" value="{{ $product->id }}" class="rounded">
+                        <span class="truncate">{{ $product->name }}</span>
+                    </span>
+                    <span class="text-xs text-gray-500 shrink-0">₹{{ number_format($product->price, 2) }} • GST {{ (float) $product->tax_rate }}%</span>
+                </label>
+                @endforeach
+            </div>
+            @else
+            <p class="text-sm text-gray-500 text-center py-4 mb-2">Koi active product nahi mila.</p>
+            @endif
+            @if(auth()->user()->hasPermission('products.manage'))
+            <a href="{{ route('leads.products') }}" class="block text-xs text-indigo-600 hover:underline mb-4">💡 Products pehle se Products tab me create kar ke rakhein →</a>
+            @else
+            <p class="text-xs text-gray-400 mb-4">💡 Products pehle se Products tab me create kar ke rakhein</p>
+            @endif
+            <div class="flex gap-2">
+                <button wire:click="$set('showQuotationModal', false)" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
+                <button wire:click="createQuotation" class="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm">Create Quotation →</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Send Demo modal --}}
+    @if($showDemoModal)
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-semibold">Send Demo — {{ $lead->name }}</h3>
+                <button wire:click="$set('showDemoModal', false)" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Demo select karein — WhatsApp/Email pre-filled message ke saath khulega aur timeline me log hoga.</p>
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+                @forelse($demos as $demo)
+                <div class="p-3 border dark:border-gray-600 rounded-xl" wire:key="demo-{{ $demo->id }}">
+                    <div class="font-medium text-sm">{{ $demo->name }}</div>
+                    <div class="text-xs text-gray-500 break-all mb-2">{{ Str::limit($demo->url, 50) }}</div>
+                    <div class="flex gap-2">
+                        @if($lead->phone)
+                        <button wire:click="sendDemo({{ $demo->id }}, 'whatsapp')" class="flex-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs">💬 WhatsApp</button>
+                        @endif
+                        @if($lead->email)
+                        <button wire:click="sendDemo({{ $demo->id }}, 'email')" class="flex-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg text-xs">✉️ Email</button>
+                        @endif
+                        @if(!$lead->phone && !$lead->email)
+                        <span class="text-xs text-red-500">Lead ka phone/email nahi hai</span>
+                        @endif
+                    </div>
+                </div>
+                @empty
+                <p class="text-sm text-gray-500 text-center py-6">Koi active demo nahi hai. Settings → Manage Demos me demo templates add karein.</p>
+                @endforelse
+            </div>
+            @if(auth()->user()->hasPermission('settings.manage'))
+            <a href="{{ route('leads.settings') }}" class="block text-xs text-indigo-600 hover:underline mt-3">⚙ Manage Demos in Settings →</a>
+            @endif
+        </div>
+    </div>
+    @endif
+
+    {{-- Schedule Meeting modal --}}
+    @if($showMeetingModal)
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-semibold">Schedule Meeting — {{ $lead->name }}</h3>
+                <button wire:click="$set('showMeetingModal', false)" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs mb-4">
+                <span class="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">📱 {{ $lead->phone ?? 'No phone' }}</span>
+                <span class="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">✉️ {{ $lead->email ?? 'No email' }}</span>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-gray-500 block mb-1">Platform</label>
+                    <select wire:model.live="meetingPlatform" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm">
+                        <option value="google_meet">Google Meet</option>
+                        <option value="zoom">Zoom</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 block mb-1">Meeting mode</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center gap-2 p-2.5 border dark:border-gray-600 rounded-lg cursor-pointer text-sm {{ $meetingMode === 'instant' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : '' }}">
+                            <input type="radio" wire:model.live="meetingMode" value="instant"> ⚡ Instant meeting
+                        </label>
+                        <label class="flex-1 flex items-center gap-2 p-2.5 border dark:border-gray-600 rounded-lg cursor-pointer text-sm {{ $meetingMode === 'scheduled' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : '' }}">
+                            <input type="radio" wire:model.live="meetingMode" value="scheduled"> 🗓 Scheduled
+                        </label>
+                    </div>
+                </div>
+                @if($meetingMode === 'scheduled')
+                <div>
+                    <label class="text-xs text-gray-500 block mb-1">Date & time</label>
+                    <input type="datetime-local" wire:model="meetingAt" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm">
+                    @error('meetingAt') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                @endif
+
+                <div class="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 space-y-2">
+                    <p class="text-xs text-gray-500">
+                        <span class="font-semibold">Step 1:</span>
+                        @if($meetingPlatform === 'zoom')
+                        Zoom open hoga — meeting start karke invite link copy karein. (Settings me Zoom personal link set hai toh wahi use hoga.)
+                        @elseif($meetingMode === 'scheduled')
+                        Google Calendar event template khulega — save karte hi Meet link auto-create hota hai, use copy karein.
+                        @else
+                        Google Meet new meeting khulega — link copy karein.
+                        @endif
+                    </p>
+                    <button wire:click="launchMeetingPlatform" class="w-full px-3 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg text-sm">
+                        🔗 Open {{ $meetingPlatform === 'zoom' ? 'Zoom' : ($meetingMode === 'scheduled' ? 'Google Calendar (Meet)' : 'Google Meet') }}
+                    </button>
+                    <p class="text-xs text-gray-500"><span class="font-semibold">Step 2:</span> Meeting link yahan paste karein:</p>
+                    <input type="url" wire:model="meetingLink" placeholder="https://meet.google.com/abc-defg-hij" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-500 block mb-1">Share via</label>
+                    <div class="flex gap-4 text-sm">
+                        <label class="flex items-center gap-2 {{ $lead->phone ? 'cursor-pointer' : 'opacity-50' }}">
+                            <input type="checkbox" wire:model="meetingShareWhatsapp" class="rounded" @disabled(!$lead->phone)> 💬 WhatsApp
+                        </label>
+                        <label class="flex items-center gap-2 {{ $lead->email ? 'cursor-pointer' : 'opacity-50' }}">
+                            <input type="checkbox" wire:model="meetingShareEmail" class="rounded" @disabled(!$lead->email)> ✉️ Email
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-5">
+                <button wire:click="$set('showMeetingModal', false)" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
+                <button wire:click="shareMeeting" class="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium">Share Invite & Log</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Scheduled meeting par reminder bhi set ho jayega. Templates: Settings → Meeting Settings.</p>
         </div>
     </div>
     @endif

@@ -13,7 +13,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'tenant_id', 'role_id', 'name', 'email', 'phone', 'password',
-        'is_super_admin', 'is_active', 'avatar_path', 'locale',
+        'is_super_admin', 'is_active', 'avatar_path', 'locale', 'settings',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -25,6 +25,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
             'is_active' => 'boolean',
+            'settings' => 'array',
         ];
     }
 

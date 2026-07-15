@@ -3,6 +3,7 @@
 namespace App\Livewire\Leads;
 
 use App\Models\CustomField;
+use App\Models\Demo;
 use App\Models\Lead;
 use App\Models\LeadChatMessage;
 use App\Models\LeadForward;
@@ -12,9 +13,12 @@ use App\Models\LeadRecording;
 use App\Models\LeadReminder;
 use App\Models\LeadStage;
 use App\Models\LeadTask;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\CustomerService;
 use App\Services\ReviewRequestService;
+use App\Support\MeetingTemplates;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -44,6 +48,22 @@ class Show extends Component
     public bool $showWhatsappModal = false;
     public string $activityTitle = '';
     public string $activityDescription = '';
+
+    // Create Quotation quick action
+    public bool $showQuotationModal = false;
+    public array $quoteProducts = [];
+
+    // Send Demo
+    public bool $showDemoModal = false;
+
+    // Schedule Meeting
+    public bool $showMeetingModal = false;
+    public string $meetingPlatform = 'google_meet';
+    public string $meetingMode = 'instant';
+    public string $meetingAt = '';
+    public bool $meetingShareWhatsapp = false;
+    public bool $meetingShareEmail = false;
+    public string $meetingLink = '';
 
     public string $taskTitle = '';
     public string $taskDescription = '';
@@ -88,10 +108,24 @@ class Show extends Component
         $this->customFieldValues = $lead->custom_fields ?? [];
         $this->reminderAt = now()->addHour()->format('Y-m-d\TH:i');
         $this->taskDueAt = now()->addDay()->format('Y-m-d\TH:i');
+        $this->meetingAt = now()->addHour()->format('Y-m-d\TH:i');
+        $this->meetingShareWhatsapp = (bool) $lead->phone;
+        $this->meetingShareEmail = ! $lead->phone && (bool) $lead->email;
 
         if (request()->has('tab')) {
             $this->activeTab = request('tab');
         }
+
+        // Deep-links from leads list actions menu: ?action=...
+        match (request('action')) {
+            'edit' => $this->showEditModal = true,
+            'followup' => $this->activeTab = 'task',
+            'transfer' => $this->activeTab = 'forward',
+            'quotation' => $this->showQuotationModal = true,
+            'demo' => $this->showDemoModal = true,
+            'meeting' => $this->showMeetingModal = true,
+            default => null,
+        };
     }
 
     public function setLabel($labelId): void
@@ -323,6 +357,169 @@ class Show extends Component
         $this->lead->refresh();
     }
 
+    public function createQuotation()
+    {
+        if (! auth()->user()->hasPermission('documents.create')) {
+            $this->dispatch('notify', message: 'Documents create permission nahi hai', type: 'error');
+
+            return;
+        }
+
+        $params = ['lead_id' => $this->lead->id, 'type' => 'quotation'];
+        $ids = array_filter(array_map('intval', $this->quoteProducts));
+        if ($ids) {
+            $params['products'] = implode(',', $ids);
+        }
+
+        return $this->redirect(route('leads.documents.create', $params));
+    }
+
+    public function sendDemo(int $demoId, string $channel = 'whatsapp'): void
+    {
+        if (! Schema::hasTable('demos')) {
+            return;
+        }
+
+        $demo = Demo::where('is_active', true)->find($demoId);
+        if (! $demo) {
+            $this->dispatch('notify', message: 'Demo template nahi mila', type: 'error');
+
+            return;
+        }
+
+        $message = $demo->message ?: "Hello {name}, humara product demo yahan dekhein: {link}";
+        $message = str_replace(['{name}', '{link}'], [$this->lead->name, $demo->url], $message);
+        if (! str_contains($demo->message ?? '', '{link}') && $demo->message) {
+            $message .= "\n\nDemo Link: ".$demo->url;
+        }
+
+        if ($channel === 'email') {
+            if (! $this->lead->email) {
+                $this->dispatch('notify', message: 'Lead ka email nahi hai', type: 'error');
+
+                return;
+            }
+            $subject = 'Product Demo - '.$demo->name;
+            $url = 'mailto:'.$this->lead->email.'?subject='.rawurlencode($subject).'&body='.rawurlencode($message);
+        } else {
+            if (! $this->lead->phone) {
+                $this->dispatch('notify', message: 'Lead ka phone number nahi hai', type: 'error');
+
+                return;
+            }
+            $phone = preg_replace('/[^0-9]/', '', $this->lead->phone);
+            $url = 'https://wa.me/91'.$phone.'?text='.urlencode($message);
+        }
+
+        $this->lead->update(['last_contacted_at' => now()]);
+        $this->lead->logActivity('demo', "Demo sent: {$demo->name} (via ".ucfirst($channel).')', $message);
+        $this->showDemoModal = false;
+        $this->lead->refresh();
+        $this->dispatch('notify', message: 'Demo '.($channel === 'email' ? 'email' : 'WhatsApp').' open ho raha hai — timeline me logged');
+        $this->dispatch('open-url', url: $url);
+    }
+
+    public function launchMeetingPlatform(): void
+    {
+        if ($this->meetingPlatform === 'zoom') {
+            $zoomLink = auth()->user()->tenant->settings['zoom_personal_link'] ?? '';
+            if ($zoomLink) {
+                // Personal meeting link configured — link field bhi prefill kar do
+                $this->meetingLink = $zoomLink;
+                $url = $zoomLink;
+            } else {
+                $url = 'https://zoom.us/start/videomeeting';
+            }
+        } elseif ($this->meetingMode === 'scheduled' && $this->meetingAt) {
+            $start = Carbon::parse($this->meetingAt);
+            $end = $start->copy()->addMinutes(45);
+            $query = http_build_query([
+                'action' => 'TEMPLATE',
+                'text' => 'Meeting: '.$this->lead->name.' x '.auth()->user()->tenant->name,
+                'dates' => $start->format('Ymd\THis').'/'.$end->format('Ymd\THis'),
+                'details' => 'Scheduled from CRM for lead '.$this->lead->name.'. Google Meet link is auto-added on save.',
+                'add' => $this->lead->email ?? '',
+            ]);
+            $url = 'https://calendar.google.com/calendar/render?'.$query;
+        } else {
+            $url = 'https://meet.google.com/new';
+        }
+
+        $this->dispatch('open-url', url: $url);
+    }
+
+    public function shareMeeting(): void
+    {
+        if (! trim($this->meetingLink)) {
+            $this->dispatch('notify', message: 'Pehle meeting link generate karke yahan paste karein', type: 'error');
+
+            return;
+        }
+
+        if ($this->meetingMode === 'scheduled') {
+            $this->validate(['meetingAt' => 'required|date']);
+        }
+
+        if (! $this->meetingShareWhatsapp && ! $this->meetingShareEmail) {
+            $this->dispatch('notify', message: 'Share ke liye WhatsApp ya Email select karein', type: 'error');
+
+            return;
+        }
+
+        $tenant = auth()->user()->tenant;
+        $when = $this->meetingMode === 'scheduled' ? Carbon::parse($this->meetingAt) : now();
+        $vars = [
+            'name' => $this->lead->name,
+            'date' => $when->format('d M Y'),
+            'time' => $this->meetingMode === 'scheduled' ? $when->format('h:i A') : 'Abhi (Instant meeting)',
+            'link' => trim($this->meetingLink),
+            'company' => $tenant->name,
+        ];
+
+        $templates = MeetingTemplates::forTenant($tenant);
+        $prefix = $this->meetingPlatform === 'zoom' ? 'zoom' : 'google_meet';
+        $platformLabel = $this->meetingPlatform === 'zoom' ? 'Zoom' : 'Google Meet';
+
+        if ($this->meetingShareWhatsapp && $this->lead->phone) {
+            $message = MeetingTemplates::fill($templates[$prefix.'_whatsapp'], $vars);
+            $phone = preg_replace('/[^0-9]/', '', $this->lead->phone);
+            $this->dispatch('open-url', url: 'https://wa.me/91'.$phone.'?text='.urlencode($message));
+        }
+
+        if ($this->meetingShareEmail && $this->lead->email) {
+            $subject = MeetingTemplates::fill($templates[$prefix.'_email_subject'], $vars);
+            $body = MeetingTemplates::fill($templates[$prefix.'_email'], $vars);
+            $this->dispatch('open-url', url: 'mailto:'.$this->lead->email.'?subject='.rawurlencode($subject).'&body='.rawurlencode($body));
+        }
+
+        $this->lead->update(['last_contacted_at' => now()]);
+        $this->lead->logActivity(
+            'meeting',
+            $this->meetingMode === 'scheduled'
+                ? "{$platformLabel} meeting scheduled: ".$when->format('d M Y, h:i A')
+                : "{$platformLabel} instant meeting started",
+            trim($this->meetingLink)
+        );
+
+        if ($this->meetingMode === 'scheduled') {
+            LeadReminder::create([
+                'tenant_id' => $this->lead->tenant_id,
+                'lead_id' => $this->lead->id,
+                'user_id' => auth()->id(),
+                'title' => "Meeting: {$this->lead->name} ({$platformLabel})",
+                'description' => trim($this->meetingLink),
+                'remind_at' => $when,
+                'type' => 'meeting',
+            ]);
+            $this->lead->update(['next_follow_up_at' => $when]);
+        }
+
+        $this->showMeetingModal = false;
+        $this->meetingLink = '';
+        $this->lead->refresh();
+        $this->dispatch('notify', message: 'Meeting invite share ho gaya — timeline me logged');
+    }
+
     public function logAction(string $action): void
     {
         $titles = [
@@ -484,7 +681,14 @@ class Show extends Component
         );
         $customFields = $this->getCustomFields();
 
-        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates', 'whatsappPreviews', 'customFields'))
+        $demos = Schema::hasTable('demos')
+            ? Demo::where('is_active', true)->latest()->get()
+            : collect();
+        $products = Schema::hasTable('products')
+            ? Product::where('is_active', true)->orderBy('name')->get()
+            : collect();
+
+        return view('livewire.leads.show', compact('employees', 'stages', 'labels', 'timeline', 'openTasks', 'whatsappTemplates', 'whatsappPreviews', 'customFields', 'demos', 'products'))
             ->layout('layouts.app');
     }
 }

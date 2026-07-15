@@ -240,6 +240,35 @@
                             @endif
                             <a href="{{ route('leads.show', $lead) }}?tab=notes" class="w-8 h-8 flex items-center justify-center rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200" title="Notes">📝</a>
                             <a href="{{ route('leads.show', $lead) }}?tab=timeline" class="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200" title="Timeline">📋</a>
+
+                            {{-- Row actions menu (fixed position — table ke overflow se clip nahi hota) --}}
+                            <div x-data="{ open: false, top: 0, left: 0 }">
+                                <button type="button"
+                                    @click="const r = $event.currentTarget.getBoundingClientRect(); top = r.bottom + 4; left = Math.max(8, Math.min(r.right - 208, window.innerWidth - 216)); open = !open"
+                                    class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold"
+                                    title="More actions">⋮</button>
+                                <div x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false"
+                                    class="fixed z-50 w-52 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-xl shadow-xl py-1.5 text-left"
+                                    :style="`top:${top}px; left:${left}px`">
+                                    <a href="{{ route('leads.show', $lead) }}" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">👁 View</a>
+                                    @if(auth()->user()->hasPermission('leads.edit'))
+                                    <a href="{{ route('leads.show', $lead) }}?action=edit" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">✏️ Edit</a>
+                                    @endif
+                                    <a href="{{ route('leads.show', $lead) }}?action=followup" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">⏰ Set Follow-up</a>
+                                    @if(auth()->user()->hasPermission('leads.forward'))
+                                    <button wire:click="openTransfer({{ $lead->id }})" @click="open = false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">🔀 Transfer Lead</button>
+                                    @endif
+                                    @if(auth()->user()->hasPermission('documents.create'))
+                                    <button wire:click="openQuote({{ $lead->id }})" @click="open = false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">🧾 Create Quotation</button>
+                                    @endif
+                                    <a href="{{ route('leads.show', $lead) }}?action=meeting" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">📅 Schedule Meeting</a>
+                                    <a href="{{ route('leads.show', $lead) }}?action=demo" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700">🖥 Send Demo</a>
+                                    @if(auth()->user()->hasPermission('leads.delete'))
+                                    <div class="border-t dark:border-gray-600 my-1"></div>
+                                    <button wire:click="deleteLead({{ $lead->id }})" wire:confirm="Is lead ko delete karna hai? Ye action undo nahi hoga." @click="open = false" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">🗑 Delete</button>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </td>
                     @endif
@@ -523,6 +552,68 @@
             <label class="flex items-center justify-center gap-2 mt-3 text-xs text-gray-500 cursor-pointer">
                 <input type="checkbox" wire:click="dismissOnboarding" class="rounded"> Don't show again
             </label>
+        </div>
+    </div>
+    @endif
+
+    {{-- Transfer Lead Modal --}}
+    @if($showTransferModal)
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold">Transfer Lead</h3>
+                <button wire:click="$set('showTransferModal', false)" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Lead kisi aur team member ko assign hoga — forward history me bhi log hoga.</p>
+            <select wire:model="transferTo" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 mb-1 text-sm">
+                <option value="">Select team member...</option>
+                @foreach($employees as $emp)
+                @if($emp->id !== auth()->id())<option value="{{ $emp->id }}">{{ $emp->name }}</option>@endif
+                @endforeach
+            </select>
+            @error('transferTo') <p class="text-red-500 text-xs mb-2">{{ $message }}</p> @enderror
+            <textarea wire:model="transferNote" rows="3" placeholder="Note for the new owner (optional)..." class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 mt-2 mb-4 text-sm"></textarea>
+            <div class="flex gap-2">
+                <button wire:click="$set('showTransferModal', false)" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
+                <button wire:click="transferLead" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">🔀 Transfer</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Create Quotation Modal --}}
+    @if($showQuoteModal)
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold">Create Quotation</h3>
+                <button wire:click="$set('showQuoteModal', false)" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Products select karein — quotation pre-filled items ke saath khulega.</p>
+            @if($quoteModalProducts->count())
+            <div class="space-y-1.5 max-h-56 overflow-y-auto mb-3">
+                @foreach($quoteModalProducts as $product)
+                <label class="flex items-center justify-between gap-2 p-2.5 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10" wire:key="qmp-{{ $product->id }}">
+                    <span class="flex items-center gap-2 text-sm min-w-0">
+                        <input type="checkbox" wire:model="quoteProducts" value="{{ $product->id }}" class="rounded">
+                        <span class="truncate">{{ $product->name }}</span>
+                    </span>
+                    <span class="text-xs text-gray-500 shrink-0">₹{{ number_format($product->price, 2) }} • GST {{ (float) $product->tax_rate }}%</span>
+                </label>
+                @endforeach
+            </div>
+            @else
+            <p class="text-sm text-gray-500 text-center py-4 mb-2">Koi active product nahi mila.</p>
+            @endif
+            @if(auth()->user()->hasPermission('products.manage'))
+            <a href="{{ route('leads.products') }}" class="block text-xs text-indigo-600 hover:underline mb-4">💡 Products pehle se Products tab me create kar ke rakhein →</a>
+            @else
+            <p class="text-xs text-gray-400 mb-4">💡 Products pehle se Products tab me create kar ke rakhein</p>
+            @endif
+            <div class="flex gap-2">
+                <button wire:click="$set('showQuoteModal', false)" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
+                <button wire:click="createQuotation" class="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm">Create Quotation →</button>
+            </div>
         </div>
     </div>
     @endif

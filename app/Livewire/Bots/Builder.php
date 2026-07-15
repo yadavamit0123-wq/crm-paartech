@@ -14,6 +14,7 @@ class Builder extends Component
     public string $newNodeLabel = '';
     public string $newNodeText = '';
     public bool $showPreview = false;
+    public bool $showGuide = false;
     public bool $newLeadsOnly = false;
     public string $triggerType = 'keyword';
 

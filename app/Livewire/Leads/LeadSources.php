@@ -333,10 +333,16 @@ class LeadSources extends Component
         $state[$key] = array_merge($state[$key] ?? [], $changes);
         $settings['lead_sources'] = $state;
 
-        // Keep the legacy connected_sources name list in sync.
+        // Keep the legacy connected_sources name list in sync. When the key
+        // was never persisted, seed it from currently connected names so the
+        // old default set is not lost on first write.
         $source = $this->findSource($key);
         if ($source) {
-            $legacy = $settings['connected_sources'] ?? [];
+            $legacy = $settings['connected_sources']
+                ?? array_values(array_map(
+                    fn ($s) => $s['name'],
+                    array_filter($this->sources, fn ($s) => ($s['status'] ?? '') === 'connected')
+                ));
             $isConnecting = ($changes['status'] ?? null) === 'connected';
             $isDisconnecting = ($changes['status'] ?? null) === 'disconnected';
 

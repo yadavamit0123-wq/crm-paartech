@@ -5,11 +5,119 @@
         <div><h1 class="text-2xl font-bold">Automation</h1><p class="text-gray-500 text-sm">Trigger-based workflows & drip sequences</p></div>
         <div class="flex flex-wrap gap-2">
             <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search rules..." class="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
+            <button wire:click="$toggle('showGuide')" class="px-3 py-2 border rounded-lg text-sm {{ $showGuide ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 text-indigo-700 dark:text-indigo-300' : '' }}">📖 How it works</button>
             <button class="px-3 py-2 border rounded-lg text-sm" onclick="window.open('https://www.youtube.com/results?search_query=crm+automation', '_blank')">❓ Help</button>
             <button class="px-3 py-2 border rounded-lg text-sm" onclick="window.open('https://www.youtube.com/results?search_query=3sigma+crm+automation', '_blank')">🎬 Video</button>
             <button wire:click="$refresh" class="px-3 py-2 border rounded-lg text-sm">🔄 Refresh</button>
             <button wire:click="openCreate" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">+ New rule</button>
         </div>
+    </div>
+
+    {{-- How automation works — full guide --}}
+    @if($showGuide)
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-bold text-lg">📖 How automation works — full guide</h2>
+            <button wire:click="$set('showGuide', false)" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <div class="grid md:grid-cols-5 gap-3 mb-6">
+            <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
+                <div class="text-lg mb-1">1️⃣</div>
+                <div class="font-semibold text-sm mb-1">Trigger kya hai?</div>
+                <p class="text-xs text-gray-600 dark:text-gray-300">Trigger = woh event jo automation ko start karta hai. Jaise "New lead created" — jab bhi naya lead aata hai, rule turant chal jata hai. Aapko kuch manually karna nahi padta.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
+                <div class="text-lg mb-1">2️⃣</div>
+                <div class="font-semibold text-sm mb-1">Action kya hoga?</div>
+                <p class="text-xs text-gray-600 dark:text-gray-300">Trigger fire hone par system action perform karta hai — WhatsApp message, email, ya follow-up task. Message me @{{name}} likho toh lead ka naam automatically replace ho jata hai.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
+                <div class="text-lg mb-1">3️⃣</div>
+                <div class="font-semibold text-sm mb-1">Enable / Disable</div>
+                <p class="text-xs text-gray-600 dark:text-gray-300">Table me Status column dekho — Active matlab rule chal raha hai. "Pause" dabao toh rule ruk jata hai (delete nahi hota). Wapas "Activate" karo, dobara chalu.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
+                <div class="text-lg mb-1">4️⃣</div>
+                <div class="font-semibold text-sm mb-1">Test kaise kare?</div>
+                <p class="text-xs text-gray-600 dark:text-gray-300">Har rule ke saamne "Run Now" button hai — woh aapke latest lead par rule chala deta hai. Ya ek dummy test lead create karo, "New lead created" wale rules apne aap fire honge.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
+                <div class="text-lg mb-1">5️⃣</div>
+                <div class="font-semibold text-sm mb-1">Verify in timeline</div>
+                <p class="text-xs text-gray-600 dark:text-gray-300">Lead kholo → Activity Timeline dekho. Har automation action wahan "Automation: WhatsApp sent" jaise entry ke saath dikhta hai. Yahan table me Runs / Completed count bhi badhta hai.</p>
+            </div>
+        </div>
+        <h3 class="font-semibold text-sm mb-2">Trigger reference — kaunsa trigger kab fire hota hai</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs border dark:border-gray-700 rounded-lg">
+                <thead class="bg-gray-50 dark:bg-gray-700 text-gray-500 uppercase">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Trigger</th>
+                        <th class="px-3 py-2 text-left">Kab chalta hai</th>
+                        <th class="px-3 py-2 text-left">Best use</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y dark:divide-gray-700">
+                    <tr><td class="px-3 py-2 font-medium">New lead created</td><td class="px-3 py-2">Jaise hi naya lead system me aata hai (manual add, import, form — kahin se bhi). Instantly fire hota hai.</td><td class="px-3 py-2">Welcome message, intro email, first-call task</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">Status updated</td><td class="px-3 py-2">Jab lead ka stage/status change hota hai (pipeline me move karne par). Instantly fire hota hai.</td><td class="px-3 py-2">Next-step message, won/lost follow-up</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">No call in 24 hours</td><td class="px-3 py-2">Scheduled check: agar lead create hue 24+ ghante ho gaye aur koi call log nahi hui. Background me periodically chalta hai.</td><td class="px-3 py-2">Follow-up reminder, re-engagement message</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">Task overdue</td><td class="px-3 py-2">Scheduled check: jab lead ka koi pending task due date cross kar leta hai.</td><td class="px-3 py-2">Escalation task, manager alert</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">WhatsApp message received</td><td class="px-3 py-2">Jab lead ka inbound WhatsApp message aata hai aur bot reply match hota hai (Inbox me).</td><td class="px-3 py-2">Instant acknowledgment, reply task</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">Lead edited / Label updated / List added / Time-based</td><td class="px-3 py-2">Yeh triggers abhi limited hain — rule ban jayega, lekin auto-fire tabhi hoga jab yeh events system me enable ho. Abhi ke liye "Run Now" se manually chala sakte ho.</td><td class="px-3 py-2">Advanced workflows (coming soon)</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">💡 Pro tip: Pehle Recipe Library se 2–3 recipes install karo, ek test lead banao, phir lead ki timeline me result verify karo. Automation samajhne ka sabse fast tareeka yahi hai.</p>
+    </div>
+    @endif
+
+    {{-- Recipe Library --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 mb-6">
+        <button wire:click="$toggle('showRecipes')" class="w-full flex justify-between items-center px-6 py-4 text-left">
+            <div>
+                <h2 class="font-bold text-lg">⚡ Recipe Library</h2>
+                <p class="text-gray-500 text-sm">One-click prebuilt automations — install karo aur leads autopilot par chalao</p>
+            </div>
+            <span class="text-gray-400 text-sm">{{ $showRecipes ? '▲ Hide' : '▼ Show' }}</span>
+        </button>
+        @if($showRecipes)
+        <div class="px-6 pb-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($recipes as $recipe)
+            @php $installedRow = $installed->get($recipe['name']); @endphp
+            <div class="border dark:border-gray-700 rounded-xl p-4 flex flex-col {{ $installedRow ? 'bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800' : 'hover:border-indigo-400 dark:hover:border-indigo-500' }} transition">
+                <div class="flex items-start justify-between mb-2">
+                    <span class="text-2xl">{{ $recipe['icon'] }}</span>
+                    @if($installedRow)
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Installed ✓</span>
+                    @endif
+                </div>
+                <h3 class="font-semibold text-sm">{{ $recipe['name'] }}</h3>
+                <p class="text-xs text-gray-500 mt-1 flex-1">{{ $recipe['desc'] }}</p>
+                <div class="mt-3 space-y-1">
+                    <div class="text-xs"><span class="font-medium text-gray-400 uppercase">Trigger:</span> <span class="text-indigo-600 dark:text-indigo-400">{{ $triggers[$recipe['trigger']] ?? $recipe['trigger'] }}</span></div>
+                    <div class="text-xs">
+                        <span class="font-medium text-gray-400 uppercase">Actions:</span>
+                        @foreach($recipe['actions'] as $act)
+                        <span class="inline-block px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 mr-1">{{ str_replace('_', ' ', $act['type']) }}</span>
+                        @endforeach
+                        @if(count($recipe['day_actions']) > 1)
+                        <span class="inline-block px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">{{ count($recipe['day_actions']) }}-day drip</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="mt-3">
+                    @if($installedRow)
+                    <button wire:click="toggleActive({{ $installedRow->id }})" class="w-full py-1.5 border rounded-lg text-xs {{ $installedRow->is_active ? 'text-amber-600 border-amber-300' : 'text-green-600 border-green-300' }}">
+                        {{ $installedRow->is_active ? 'Pause' : 'Activate' }}
+                    </button>
+                    @else
+                    <button wire:click="installRecipe('{{ $recipe['key'] }}')" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium">Install</button>
+                    @endif
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-x-auto">

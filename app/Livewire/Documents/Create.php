@@ -114,6 +114,51 @@ class Create extends Component
         if (request('template')) {
             $this->setTemplate(request('template'));
         }
+        if (request('products')) {
+            $this->prefillProducts((string) request('products'));
+        }
+    }
+
+    protected function prefillProducts(string $csv): void
+    {
+        $ids = array_values(array_filter(array_map('intval', explode(',', $csv))));
+        if (empty($ids)) {
+            return;
+        }
+
+        $products = Product::whereIn('id', $ids)->where('is_active', true)->get()->keyBy('id');
+        $added = false;
+
+        foreach ($ids as $id) {
+            $product = $products->get($id);
+            if (! $product) {
+                continue;
+            }
+            $this->items[] = [
+                'description' => $product->name,
+                'long_description' => $product->description ?? '',
+                'group_name' => $product->category ?? '',
+                'image_path' => null,
+                'hsn_sac' => $product->hsn_sac ?? '998314',
+                'quantity' => 1,
+                'unit' => $product->unit ?? 'Nos',
+                'rate' => (float) $product->price,
+                'discount_type' => 'fixed',
+                'discount_percent' => 0,
+                'discount_amount' => 0,
+                'gst_rate' => (float) $product->tax_rate,
+                'expanded' => true,
+            ];
+            $added = true;
+        }
+
+        if ($added) {
+            // Shuruaati blank line item hata do — quote seedha products ke saath khule
+            $this->items = array_values(array_filter(
+                $this->items,
+                fn ($item) => filled(trim($item['description'] ?? ''))
+            ));
+        }
     }
 
     protected function blankItem(): array

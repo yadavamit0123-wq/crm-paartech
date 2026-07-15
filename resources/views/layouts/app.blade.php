@@ -82,9 +82,52 @@
     <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-2 w-80 max-w-[calc(100vw-2rem)]"></div>
     <div id="page-progress"><div class="bar"></div></div>
 
-    <audio id="notification-sound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAf16AAABAAgAZGF0YUtvT19XQVZFZm10IBAAAAABAAEAQB8AAEAf16AAABAAgAZGF0YU" type="audio/wav">
-    </audio>
+    @auth
+        @if(!auth()->user()->isSuperAdmin())
+            @livewire('notifications.followup-alert')
+        @endif
+    @endauth
+
+    <script>
+        // WebAudio based notification beep (purana <audio> element ka base64 src invalid tha)
+        window.crmAudio = {
+            ctx: null,
+            ensure() {
+                try {
+                    this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    return this.ctx.state === 'running' ? this.ctx : null;
+                } catch (e) {
+                    return null;
+                }
+            },
+            beep() {
+                const ctx = this.ensure();
+                if (!ctx) return;
+                const t0 = ctx.currentTime;
+                // do-tone ring pattern: high-low-high
+                [[880, 0, 0.18], [660, 0.22, 0.18], [880, 0.44, 0.28]].forEach(([freq, offset, dur]) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.0001, t0 + offset);
+                    gain.gain.exponentialRampToValueAtTime(0.25, t0 + offset + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + offset + dur);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(t0 + offset);
+                    osc.stop(t0 + offset + dur + 0.05);
+                });
+            }
+        };
+        // Browsers block autoplay — pehle user click par AudioContext resume kar do
+        document.addEventListener('click', () => {
+            try {
+                if (window.crmAudio.ctx && window.crmAudio.ctx.state === 'suspended') window.crmAudio.ctx.resume();
+            } catch (e) {}
+        });
+    </script>
 
     @livewireScripts
     <script>
@@ -103,8 +146,7 @@
             });
 
             Livewire.on('play-notification-sound', () => {
-                const audio = document.getElementById('notification-sound');
-                if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+                try { window.crmAudio.beep(); } catch (e) {}
                 if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification('CRM Reminder', { body: 'You have pending follow-ups!' });
                 }

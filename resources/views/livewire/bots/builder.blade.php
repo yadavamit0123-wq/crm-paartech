@@ -9,6 +9,7 @@
             <label class="flex items-center gap-2 text-sm px-3 py-2 border rounded-lg cursor-pointer">
                 <input type="checkbox" wire:model="newLeadsOnly" class="rounded"> New Leads Only
             </label>
+            <button wire:click="$toggle('showGuide')" class="px-3 py-2 border rounded-lg text-sm {{ $showGuide ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 text-indigo-700 dark:text-indigo-300' : '' }}">📖 How it works</button>
             <button wire:click="$toggle('showPreview')" class="px-3 py-2 border rounded-lg text-sm">Preview Bot</button>
             <button wire:click="saveFlow" class="px-4 py-2 border rounded-lg text-sm">Save Bot</button>
             <button wire:click="toggleActive" class="px-4 py-2 {{ $bot->is_active ? 'bg-amber-500' : 'bg-green-600' }} text-white rounded-lg text-sm">
@@ -16,6 +17,23 @@
             </button>
         </div>
     </div>
+
+    {{-- How bots work guide --}}
+    @if($showGuide)
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5 mb-4">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold">📖 How this bot works</h3>
+            <button wire:click="$set('showGuide', false)" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <ol class="text-sm text-gray-600 dark:text-gray-300 space-y-2 list-decimal list-inside">
+            <li><span class="font-medium">Keyword match:</span> lead ke inbound WhatsApp message me trigger keyword aate hi bot fire hota hai (case-insensitive, message me kahin bhi ho).</li>
+            <li><span class="font-medium">Flow node by node:</span> yahan canvas par flow upar se neeche chalta hai — Start ke baad har node ek step hai. Left palette se node choose karo, label + content likho, "+ Add Node" dabao; naya node automatically pichle node se connect ho jata hai.</li>
+            <li><span class="font-medium">Activate:</span> upar "Activate" button dabao — sirf active bot hi reply karta hai. Save Bot se changes store hote hain bina activate kiye.</li>
+            <li><span class="font-medium">Test:</span> Inbox me jaake koi test message bhejo jisme keyword ho — bot ka reply usi chat me aayega aur lead timeline me "Bot auto-reply" entry banegi. "Preview Bot" se messages yahin dekh sakte ho.</li>
+            <li><span class="font-medium">Limitation (honest):</span> jab tak WhatsApp Business API configure nahi hoti, connection simulated hai — bot keyword match par flow ka pehla Send Message node bhejta hai, aur input nodes (text/email/phone) design-only hain. API connect hone par poora step-by-step flow live hoga.</li>
+        </ol>
+    </div>
+    @endif
 
     <div class="grid lg:grid-cols-4 gap-4">
         {{-- Node Palette --}}

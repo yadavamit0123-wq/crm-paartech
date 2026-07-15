@@ -456,14 +456,24 @@
             </div>
 
             {{-- Terms & Notes --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 space-y-3">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 space-y-4">
                 <div>
-                    <label class="text-xs font-medium text-gray-500">Terms & Conditions</label>
-                    <textarea wire:model="terms_conditions" rows="4" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600"></textarea>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer mb-2">
+                        <input type="checkbox" wire:model.live="showTerms" class="rounded"> Terms &amp; Conditions
+                    </label>
+                    @if($showTerms)
+                    <textarea wire:model="terms_conditions" rows="4" placeholder="Payment terms, delivery, warranty..." class="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600"></textarea>
+                    <p class="text-[11px] text-gray-400 mt-1">PDF pe dikhega jab checkbox on ho.</p>
+                    @endif
                 </div>
                 <div>
-                    <label class="text-xs font-medium text-gray-500">Notes</label>
-                    <textarea wire:model="notes" rows="2" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600"></textarea>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer mb-2">
+                        <input type="checkbox" wire:model.live="showNotes" class="rounded"> Notes
+                    </label>
+                    @if($showNotes)
+                    <textarea wire:model="notes" rows="2" placeholder="Internal / customer notes..." class="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600"></textarea>
+                    <p class="text-[11px] text-gray-400 mt-1">PDF pe dikhega jab checkbox on ho.</p>
+                    @endif
                 </div>
             </div>
 

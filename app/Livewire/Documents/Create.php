@@ -48,6 +48,8 @@ class Create extends Component
     public array $additional_charges = [];
     public bool $showShipping = false;
     public string $shipping_address = '';
+    public bool $showTerms = true;
+    public bool $showNotes = false;
     public bool $showSignature = false;
     public string $signature_name = '';
     public string $signature_title = '';
@@ -206,6 +208,8 @@ class Create extends Component
         $this->valid_until = $document->valid_until?->format('Y-m-d') ?? '';
         $this->notes = $document->notes ?? '';
         $this->terms_conditions = $document->terms_conditions ?? '';
+        $this->showNotes = filled($this->notes);
+        $this->showTerms = filled($this->terms_conditions);
         $this->additional_info = $document->additional_info ?? '';
         $this->doc_discount_type = $document->doc_discount_type ?? 'percent';
         $this->doc_discount_value = (float) ($document->doc_discount_value ?? 0);
@@ -406,6 +410,13 @@ class Create extends Component
             $this->signature_title = '';
             $this->signatureUpload = null;
             $this->stampUpload = null;
+        }
+    }
+
+    public function updatedShowTerms($value): void
+    {
+        if ($value && trim($this->terms_conditions) === '') {
+            $this->terms_conditions = app(DocumentService::class)->defaultTerms();
         }
     }
 
@@ -806,8 +817,8 @@ class Create extends Component
                 'email' => $this->contact_email,
             ] : null,
             'additional_info' => $this->additional_info ?: null,
-            'notes' => $this->notes ?: null,
-            'terms_conditions' => $this->terms_conditions ?: null,
+            'notes' => $this->showNotes ? ($this->notes ?: null) : null,
+            'terms_conditions' => $this->showTerms ? ($this->terms_conditions ?: null) : null,
             'doc_discount_type' => $this->doc_discount_type,
             'doc_discount_value' => $this->doc_discount_value ?? 0,
             'additional_charges' => $this->additional_charges,

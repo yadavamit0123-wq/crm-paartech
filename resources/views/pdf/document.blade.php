@@ -420,7 +420,11 @@
 </table>
 
 @if($document->terms_conditions)
-<div class="block">{!! nl2br(e($document->terms_conditions)) !!}</div>
+<div class="block"><strong>Terms &amp; Conditions:</strong><br>{!! nl2br(e($document->terms_conditions)) !!}</div>
+@endif
+
+@if($document->notes)
+<div class="block"><strong>Notes:</strong><br>{!! nl2br(e($document->notes)) !!}</div>
 @endif
 
 @if($document->additional_info)

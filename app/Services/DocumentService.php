@@ -301,8 +301,8 @@ class DocumentService
             'contact_details' => array_key_exists('contact_details', $data) ? $data['contact_details'] : $document->contact_details,
             'additional_info' => $data['additional_info'] ?? $document->additional_info,
             'additional_charges' => $data['additional_charges'] ?? $document->additional_charges,
-            'notes' => $data['notes'] ?? $document->notes,
-            'terms_conditions' => $data['terms_conditions'] ?? $document->terms_conditions,
+            'notes' => array_key_exists('notes', $data) ? $data['notes'] : $document->notes,
+            'terms_conditions' => array_key_exists('terms_conditions', $data) ? $data['terms_conditions'] : $document->terms_conditions,
             'advanced_options' => $data['advanced_options'] ?? $document->advanced_options,
             'shipping_details' => array_key_exists('shipping_details', $data) ? $data['shipping_details'] : $document->shipping_details,
         ]));

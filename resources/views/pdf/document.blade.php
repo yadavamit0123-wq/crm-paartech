@@ -1,27 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $document->document_number }}</title>
-    <style>
-        @php
-            $themeColor = $document->theme_color ?: '#7c3aed';
-            $opts = $document->advanced_options ?? [];
-            $hidePlaceOfSupply = ! empty($opts['hide_place_of_supply']);
-            $showTaxSummary = $opts['show_tax_summary'] ?? true;
-            $isGst = (bool) $document->is_gst_applicable;
-            $typeLabel = $document->typeLabel();
-            $currency = ($document->currency ?? 'INR') === 'USD' ? '$' : '₹';
-            $money = function ($n, bool $force2 = false) use ($currency) {
-                $n = (float) $n;
-                if ($force2 || abs($n - round($n)) > 0.00001) {
-                    return $currency.number_format($n, 2);
+    @php
+        $themeColor = $document->theme_color ?: '#7c3aed';
+        $opts = is_array($document->advanced_options ?? null) ? $document->advanced_options : [];
+        $hidePlaceOfSupply = ! empty($opts['hide_place_of_supply']);
+        $showTaxSummary = array_key_exists('show_tax_summary', $opts) ? (bool) $opts['show_tax_summary'] : true;
+        $isGst = (bool) $document->is_gst_applicable;
+        $typeLabel = $document->typeLabel();
+        $cur = \App\Support\PdfMoney::symbol($document->currency ?? 'INR');
+
+        $resolveFile = function ($path) {
+            if (! $path) {
+                return null;
+            }
+            foreach ([public_path('storage/'.$path), storage_path('app/public/'.$path)] as $candidate) {
+                if (is_string($candidate) && is_file($candidate)) {
+                    return $candidate;
                 }
+            }
 
-                return $currency.number_format($n, 0);
-            };
-        @endphp
+            return null;
+        };
 
+        $logoFile = $resolveFile($document->logo_path ?? null);
+        $pay = [];
+        try {
+            $rawPay = $document->payment_options ?? null;
+            $pay = is_array($rawPay) ? $rawPay : [];
+        } catch (\Throwable $e) {
+            $pay = [];
+        }
+        $qrFile = $resolveFile($pay['qr_image'] ?? null);
+        $sig = is_array($document->signature_data ?? null) ? $document->signature_data : [];
+        $sigImage = $resolveFile($sig['signature_image'] ?? null);
+        $stampImage = $resolveFile($sig['stamp_image'] ?? null);
+    @endphp
+    <style>
         @page {
             size: A4 portrait;
             margin: 30mm 14mm 18mm 14mm;
@@ -36,7 +53,6 @@
             line-height: 1.45;
         }
 
-        /* Repeating header — sample PT00121 style */
         .top-bar {
             position: fixed;
             top: -26mm;
@@ -46,11 +62,7 @@
             border-bottom: 1px solid #e5e7eb;
         }
         .top-bar table { width: 100%; border-collapse: collapse; }
-        .top-bar .lbl {
-            font-size: 8px;
-            color: #9ca3af;
-            line-height: 1.2;
-        }
+        .top-bar .lbl { font-size: 8px; color: #9ca3af; line-height: 1.2; }
         .top-bar .val {
             font-size: 10px;
             font-weight: bold;
@@ -58,7 +70,6 @@
             margin-top: 2px;
             line-height: 1.25;
             word-wrap: break-word;
-            max-width: 150px;
         }
         .top-bar .disc {
             font-size: 7.5px;
@@ -133,10 +144,8 @@
             font-size: 9.5px;
             color: #374151;
             word-wrap: break-word;
-            overflow-wrap: anywhere;
         }
-        .items td.r { text-align: right; white-space: nowrap; }
-        /* Long feature lists must flow across pages like sample — do NOT avoid breaks on rows */
+        .items td.r { text-align: right; }
         .items tbody tr { page-break-inside: auto; }
         .item-title {
             font-size: 10.5px;
@@ -154,11 +163,7 @@
         .item-body ul, .item-body ol { margin: 4px 0 4px 16px; padding: 0; }
         .item-body li { margin: 0 0 3px; }
         .item-body p { margin: 0 0 4px; }
-        .hsn {
-            font-size: 8px;
-            color: #9ca3af;
-            margin-top: 5px;
-        }
+        .hsn { font-size: 8px; color: #9ca3af; margin-top: 5px; }
         .group {
             font-size: 10px;
             font-weight: bold;
@@ -187,6 +192,7 @@
             font-size: 10px;
             color: #111827;
             line-height: 1.45;
+            word-wrap: break-word;
         }
         .totals .nums { width: 48%; vertical-align: top; }
         .nums-table { width: 100%; border-collapse: collapse; }
@@ -196,7 +202,7 @@
             border-bottom: 1px solid #f3f4f6;
         }
         .nums-table td:first-child { color: #6b7280; text-align: left; }
-        .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; white-space: nowrap; }
+        .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; }
         .nums-table .disc td { color: #dc2626; }
         .nums-table .grand td {
             font-size: 13px;
@@ -232,7 +238,6 @@
             color: #374151;
             margin-bottom: 3px;
             word-wrap: break-word;
-            overflow-wrap: anywhere;
         }
 
         .bank {
@@ -253,13 +258,6 @@
             border-collapse: collapse;
             page-break-inside: avoid;
         }
-        .sig .line {
-            border-top: 1px solid #d1d5db;
-            padding-top: 6px;
-            min-width: 150px;
-            display: inline-block;
-            text-align: center;
-        }
         .foot {
             margin-top: 18px;
             padding-top: 8px;
@@ -273,28 +271,7 @@
 </head>
 <body>
 
-@php
-    $resolveFile = function (?string $path) {
-        if (! $path) {
-            return null;
-        }
-        foreach ([public_path('storage/'.$path), storage_path('app/public/'.$path)] as $candidate) {
-            if (is_file($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return null;
-    };
-    $logoFile = $resolveFile($document->logo_path);
-    $pay = is_array($document->payment_options ?? null) ? $document->payment_options : [];
-    $qrFile = $resolveFile($pay['qr_image'] ?? null);
-    $sig = is_array($document->signature_data ?? null) ? $document->signature_data : [];
-    $sigImage = $resolveFile($sig['signature_image'] ?? null);
-    $stampImage = $resolveFile($sig['stamp_image'] ?? null);
-@endphp
-
-{{-- Repeating header (every page) — matches sample --}}
+{{-- Repeating header --}}
 <div class="top-bar">
     <table>
         <tr>
@@ -304,7 +281,7 @@
             </td>
             <td style="width:22%; vertical-align:top;">
                 <div class="lbl">{{ $typeLabel }} Date</div>
-                <div class="val">{{ $document->issue_date->format('d M Y') }}</div>
+                <div class="val">{{ optional($document->issue_date)->format('d M Y') }}</div>
             </td>
             <td style="width:28%; vertical-align:top;">
                 <div class="lbl">{{ $typeLabel }} For</div>
@@ -318,7 +295,6 @@
     </table>
 </div>
 
-{{-- Hero --}}
 <div class="hero">
     <div class="hero-title">{{ $typeLabel }}</div>
     @if($document->title)
@@ -330,7 +306,7 @@
             <td class="meta-value">{{ $document->document_number }}</td>
             <td style="width:24px;"></td>
             <td class="meta-label">{{ $typeLabel }} Date</td>
-            <td class="meta-value">{{ $document->issue_date->format('M d, Y') }}</td>
+            <td class="meta-value">{{ optional($document->issue_date)->format('M d, Y') }}</td>
         </tr>
         @if($document->due_date || $document->valid_until)
         <tr>
@@ -352,7 +328,6 @@
     </table>
 </div>
 
-{{-- From / For --}}
 <table class="parties">
     <tr>
         <td>
@@ -362,15 +337,15 @@
             @endif
             <div class="party-name">{{ $tenant->name }}</div>
             <div class="party-line">
-                @if($tenant->address){{ rtrim($tenant->address, ',').',' }}<br>@endif
+                @if($tenant->address){{ rtrim((string) $tenant->address, ',').',' }}<br>@endif
                 @php
                     $cityLine = trim(implode(', ', array_filter([
                         $tenant->city,
                         $tenant->state,
-                        ($tenant->country ?: 'India').($tenant->pincode ? ' - '.$tenant->pincode : ''),
+                        trim(($tenant->country ?: 'India').($tenant->pincode ? ' - '.$tenant->pincode : '')),
                     ])));
                 @endphp
-                @if($cityLine){{ $cityLine }}<br>@endif
+                @if($cityLine !== ''){{ $cityLine }}<br>@endif
                 @if($tenant->email)Email: {{ $tenant->email }}<br>@endif
                 @if($tenant->phone)Phone: {{ $tenant->phone }}@endif
                 @if($isGst && $tenant->gstin)<br>GSTIN: {{ $tenant->gstin }}@endif
@@ -383,7 +358,9 @@
             <div class="party-line">
                 @if($document->customer_address){{ $document->customer_address }}<br>@endif
                 @if($document->customer_state){{ $document->customer_state }}@endif
-                @if($isGst && $document->customer_gstin)@if($document->customer_state), @endifGSTIN: {{ $document->customer_gstin }}@endif
+                @if($isGst && $document->customer_gstin)
+                    @if($document->customer_state), @endifGSTIN: {{ $document->customer_gstin }}
+                @endif
                 @if($document->customer_state || ($isGst && $document->customer_gstin))<br>@endif
                 @if($document->customer_email)Email: {{ $document->customer_email }}<br>@endif
                 @if($document->customer_phone)Phone: {{ $document->customer_phone }}@endif
@@ -392,7 +369,6 @@
     </tr>
 </table>
 
-{{-- Items (header repeats every page) --}}
 <table class="items">
     <thead>
         <tr>
@@ -416,40 +392,42 @@
                 $rowNum++;
                 $disc = (float) ($item->discount_amount ?? 0);
                 $discType = $item->discount_type ?? 'fixed';
+                $qty = (float) ($item->quantity ?? 0);
+                $gstRate = (float) ($item->gst_rate ?? 0);
+                $discPct = (float) ($item->discount_percent ?? 0);
             @endphp
             <tr>
                 <td>
                     <div class="item-title">{{ $rowNum }}. {{ $item->description }}</div>
-                    @if($item->long_description)
-                    <div class="item-body">{!! strip_tags($item->long_description, '<br><b><strong><i><em><ul><ol><li><p>') !!}</div>
+                    @if(! empty($item->long_description))
+                    <div class="item-body">{!! strip_tags((string) $item->long_description, '<br><b><strong><i><em><ul><ol><li><p>') !!}</div>
                     @endif
-                    @if($isGst && $item->hsn_sac)
-                    <div class="hsn">HSN/SAC: {{ $item->hsn_sac }}@if($showTaxSummary && $item->gst_rate) | GST {{ rtrim(rtrim(number_format((float) $item->gst_rate, 2), '0'), '.') }}%@endif</div>
+                    @if($isGst && ! empty($item->hsn_sac))
+                    <div class="hsn">HSN/SAC: {{ $item->hsn_sac }}@if($showTaxSummary && $gstRate > 0) | GST {{ rtrim(rtrim(number_format($gstRate, 2), '0'), '.') }}%@endif</div>
                     @endif
                 </td>
                 <td class="r">
-                    {{ abs($item->quantity - round($item->quantity)) < 0.00001 ? number_format($item->quantity, 0) : number_format($item->quantity, 2) }}
-                    @if($item->unit && $item->unit !== 'Nos')
+                    {{ abs($qty - round($qty)) < 0.00001 ? number_format($qty, 0) : number_format($qty, 2) }}
+                    @if(! empty($item->unit) && $item->unit !== 'Nos')
                     <br><span style="font-size:7.5px;color:#9ca3af;">{{ $item->unit }}</span>
                     @endif
                 </td>
-                <td class="r">{{ $money($item->rate) }}</td>
+                <td class="r">{{ \App\Support\PdfMoney::format($item->rate, $cur) }}</td>
                 <td class="r">
-                    @if($discType === 'percent' && (float) $item->discount_percent > 0)
-                        {{ abs($item->discount_percent - round($item->discount_percent)) < 0.00001 ? number_format($item->discount_percent, 0) : number_format($item->discount_percent, 2) }}%
+                    @if($discType === 'percent' && $discPct > 0)
+                        {{ abs($discPct - round($discPct)) < 0.00001 ? number_format($discPct, 0) : number_format($discPct, 2) }}%
                     @elseif($disc > 0)
-                        {{ $money($disc) }}
+                        {{ \App\Support\PdfMoney::format($disc, $cur) }}
                     @else
-                        {{ $money(0) }}
+                        {{ \App\Support\PdfMoney::format(0, $cur) }}
                     @endif
                 </td>
-                <td class="r" style="font-weight:bold;color:#111827;">{{ $money($item->line_total, true) }}</td>
+                <td class="r" style="font-weight:bold;color:#111827;">{{ \App\Support\PdfMoney::format($item->line_total, $cur, true) }}</td>
             </tr>
         @endforeach
     </tbody>
 </table>
 
-{{-- Totals — sample layout: words left, figures right --}}
 <table class="totals">
     <tr>
         <td class="words">
@@ -461,26 +439,26 @@
             <table class="nums-table">
                 <tr>
                     <td>Sub Total</td>
-                    <td>{{ $money($document->subtotal, true) }}</td>
+                    <td>{{ \App\Support\PdfMoney::format($document->subtotal, $cur, true) }}</td>
                 </tr>
                 @if((float) $document->discount_amount > 0)
                 <tr class="disc">
                     <td>Discount</td>
-                    <td>({{ $money($document->discount_amount, true) }})</td>
+                    <td>({{ \App\Support\PdfMoney::format($document->discount_amount, $cur, true) }})</td>
                 </tr>
                 @endif
                 <tr>
                     <td>Discounts</td>
-                    <td>{{ $money(0, true) }}</td>
+                    <td>{{ \App\Support\PdfMoney::format(0, $cur, true) }}</td>
                 </tr>
                 <tr>
                     <td>Reductions</td>
-                    <td>{{ $money(0, true) }}</td>
+                    <td>{{ \App\Support\PdfMoney::format(0, $cur, true) }}</td>
                 </tr>
                 @if($isGst && $showTaxSummary && (float) $document->total_tax > 0)
                 <tr>
                     <td>Tax (GST)</td>
-                    <td>{{ $money($document->total_tax, true) }}</td>
+                    <td>{{ \App\Support\PdfMoney::format($document->total_tax, $cur, true) }}</td>
                 </tr>
                 @endif
                 @if(! $hidePlaceOfSupply && $document->place_of_supply)
@@ -491,15 +469,8 @@
                 @endif
                 <tr class="grand">
                     <td>Total ({{ $document->currency ?? 'INR' }})</td>
-                    <td>{{ $money($document->grand_total, true) }}</td>
+                    <td>{{ \App\Support\PdfMoney::format($document->grand_total, $cur, true) }}</td>
                 </tr>
-                @if($document->exchange_rate && (float) $document->exchange_rate > 0)
-                    @if(($document->currency ?? 'INR') === 'USD')
-                    <tr><td>INR Equivalent</td><td>₹ {{ number_format($document->grand_total * $document->exchange_rate, 2) }}</td></tr>
-                    @else
-                    <tr><td>USD Equivalent</td><td>$ {{ number_format($document->grand_total / $document->exchange_rate, 2) }}</td></tr>
-                    @endif
-                @endif
             </table>
         </td>
     </tr>
@@ -541,7 +512,7 @@
 
 <div class="bank">
     <strong>Bank Details:</strong>
-    {{ $bank['bank_name'] }} &nbsp;|&nbsp; A/C: {{ $bank['account_number'] }} &nbsp;|&nbsp; IFSC: {{ $bank['ifsc'] }} &nbsp;|&nbsp; UPI: {{ $bank['upi_id'] }}
+    {{ $bank['bank_name'] ?? '' }} &nbsp;|&nbsp; A/C: {{ $bank['account_number'] ?? '' }} &nbsp;|&nbsp; IFSC: {{ $bank['ifsc'] ?? '' }} &nbsp;|&nbsp; UPI: {{ $bank['upi_id'] ?? '' }}
 </div>
 
 @if(! empty($sig))
@@ -560,7 +531,7 @@
                 @else
                 <div style="height:28px;"></div>
                 @endif
-                <div class="line">
+                <div style="border-top:1px solid #d1d5db;padding-top:6px;min-width:150px;">
                     <strong style="font-size:10px;color:#111827;">{{ $sig['name'] ?? '' }}</strong><br>
                     <span style="font-size:8.5px;color:#6b7280;">{{ $sig['title'] ?? 'Authorised Signatory' }}</span>
                 </div>
@@ -577,9 +548,11 @@
 <script type="text/php">
     if (isset($pdf)) {
         $pdf->page_script('
-            $font = $fontMetrics->getFont("DejaVu Sans", "normal");
-            $text = "Page " . $PAGE_NUM . " of " . $PAGE_COUNT;
-            $pdf->text(478, 38, $text, $font, 7.5, array(0.42, 0.45, 0.50));
+            if (isset($fontMetrics)) {
+                $font = $fontMetrics->getFont("DejaVu Sans", "normal");
+                $text = "Page " . $PAGE_NUM . " of " . $PAGE_COUNT;
+                $pdf->text(478, 38, $text, $font, 7.5, array(0.42, 0.45, 0.50));
+            }
         ');
     }
 </script>

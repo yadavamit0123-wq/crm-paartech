@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Customer;
 use App\Models\Document;
-use App\Models\Lead;
-use App\Models\LeadStage;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class PdfService
 {
@@ -14,23 +13,31 @@ class PdfService
     {
         $document->load(['items', 'customer', 'tenant']);
 
-        $pdf = Pdf::loadView('pdf.document', [
-            'document' => $document,
-            'tenant' => $document->tenant,
-            'items' => $document->items,
-            'bank' => $this->bankDetails($document->tenant),
-        ]);
+        // Avoid crashing if payment_options migration not yet run on server
+        if (! Schema::hasColumn('documents', 'payment_options')) {
+            $document->offsetUnset('payment_options');
+        }
 
-        $pdf->setPaper('a4', 'portrait');
-        $pdf->setOption('isHtml5ParserEnabled', true);
-        $pdf->setOption('isPhpEnabled', true);
-        $pdf->setOption('isRemoteEnabled', true);
-        $pdf->setOption('defaultFont', 'DejaVu Sans');
-        $pdf->setOption('dpi', 96);
-        $pdf->setOption('enable_font_subsetting', true);
-        $pdf->setOption('isFontSubsettingEnabled', true);
+        try {
+            $pdf = Pdf::loadView('pdf.document', [
+                'document' => $document,
+                'tenant' => $document->tenant,
+                'items' => $document->items,
+                'bank' => $this->bankDetails($document->tenant),
+            ]);
 
-        return $pdf;
+            $pdf->setPaper('a4', 'portrait');
+            $pdf->setOption('isHtml5ParserEnabled', true);
+            $pdf->setOption('isPhpEnabled', true);
+            $pdf->setOption('isRemoteEnabled', true);
+            $pdf->setOption('defaultFont', 'DejaVu Sans');
+            $pdf->setOption('dpi', 96);
+
+            return $pdf;
+        } catch (Throwable $e) {
+            report($e);
+            throw $e;
+        }
     }
 
     public function download(Document $document)

@@ -4,7 +4,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $document->document_number }}</title>
     <style>
-        @page { size: A4 portrait; margin: 16mm 14mm 16mm 14mm; }
+        @@page { size: A4 portrait; margin: 16mm 14mm 16mm 14mm; }
         * { margin: 0; padding: 0; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #1f2937; line-height: 1.45; }
 
@@ -150,11 +150,21 @@
             @endif
             <div class="party-name">{{ $tenant->name ?? '' }}</div>
             <div class="party-line">
-                @if($sellerAddress){{ $sellerAddress }}<br>@endif
-                @if($sellerCityLine){{ $sellerCityLine }}<br>@endif
-                @if($tenant->email ?? null)Email: {{ $tenant->email }}<br>@endif
-                @if($tenant->phone ?? null)Phone: {{ $tenant->phone }}@endif
-                @if($isGst && ($tenant->gstin ?? null))<br>GSTIN: {{ $tenant->gstin }}@endif
+                @if($sellerAddress)
+                    {{ $sellerAddress }}<br>
+                @endif
+                @if($sellerCityLine)
+                    {{ $sellerCityLine }}<br>
+                @endif
+                @if($tenant->email ?? null)
+                    Email: {{ $tenant->email }}<br>
+                @endif
+                @if($tenant->phone ?? null)
+                    Phone: {{ $tenant->phone }}
+                @endif
+                @if($isGst && ($tenant->gstin ?? null))
+                    <br>GSTIN: {{ $tenant->gstin }}
+                @endif
             </div>
         </td>
         <td class="gap"></td>
@@ -162,14 +172,25 @@
             <div class="party-title">{{ $typeLabel }} For</div>
             <div class="party-name">{{ $document->customer_name }}</div>
             <div class="party-line">
-                @if($document->customer_address){{ $document->customer_address }}<br>@endif
-                @if($document->customer_state){{ $document->customer_state }}@endif
-                @if($isGst && $document->customer_gstin)
-                    @if($document->customer_state), @endifGSTIN: {{ $document->customer_gstin }}
+                @if($document->customer_address)
+                    {{ $document->customer_address }}<br>
                 @endif
-                @if($document->customer_state || ($isGst && $document->customer_gstin))<br>@endif
-                @if($document->customer_email)Email: {{ $document->customer_email }}<br>@endif
-                @if($document->customer_phone)Phone: {{ $document->customer_phone }}@endif
+                @if($document->customer_state)
+                    {{ $document->customer_state }}
+                @endif
+                @if($isGst && $document->customer_gstin)
+                    @if($document->customer_state), @endif
+                    GSTIN: {{ $document->customer_gstin }}
+                @endif
+                @if($document->customer_state || ($isGst && $document->customer_gstin))
+                    <br>
+                @endif
+                @if($document->customer_email)
+                    Email: {{ $document->customer_email }}<br>
+                @endif
+                @if($document->customer_phone)
+                    Phone: {{ $document->customer_phone }}
+                @endif
             </div>
         </td>
     </tr>

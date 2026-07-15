@@ -97,7 +97,8 @@
         .powered-name {
             font-size: 10px;
             font-weight: bold;
-            color: #4c1d95;
+            /* Nexpaar brand color — quotation theme_color se kabhi change nahi */
+            color: #4f46e5;
             letter-spacing: 0.8px;
             vertical-align: middle;
         }
@@ -364,12 +365,12 @@
                 <div class="disclaimer">This is an electronically generated document, no signature is required.</div>
             </td>
             <td style="width:40%;vertical-align:middle;" class="powered">
-                @if(!empty($showPoweredByNexpar))
+                @if(!empty($showPoweredByNexpaar))
                 <span class="powered-label">Powered by</span>
-                @if(!empty($nexparMark))
-                <img src="{{ $nexparMark }}" class="powered-mark" alt="">
+                @if(!empty($nexpaarMark))
+                <img src="{{ $nexpaarMark }}" class="powered-mark" alt="">
                 @endif
-                <span class="powered-name">Nexpar</span>
+                <span class="powered-name">Nexpaar</span>
                 @endif
             </td>
         </tr>

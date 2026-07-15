@@ -4,238 +4,269 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $document->document_number }}</title>
     <style>
-        @@page { size: A4 portrait; margin: 14mm 12mm 14mm 12mm; }
+        /* Compact A4: room for repeating footer on every page */
+        @@page { size: A4 portrait; margin: 12mm 11mm 16mm 11mm; }
         * { margin: 0; padding: 0; }
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 10px;
             color: #1f2937;
-            line-height: 1.45;
+            line-height: 1.4;
         }
 
-        /* Details-card jaisa outer boarder — thicker */
+        /* Page outliner — content ke aligned professional border */
         .sheet {
-            border: 3px solid #9ca3af;
-            border-radius: 8px;
-            padding: 16px 14px;
+            border: 2px solid #d1d5db;
+            padding: 12px 12px 10px;
         }
 
-        .top-bar {
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e5e7eb;
+        /* Footer: har page pe chhota slogan (DomPDF fixed) */
+        .page-footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: -11mm;
+            text-align: center;
+            font-size: 7px;
+            color: #9ca3af;
+            line-height: 1.3;
         }
-        .top-bar table { width: 100%; border-collapse: collapse; }
-        .top-bar .lbl { font-size: 8px; color: #9ca3af; }
-        .top-bar .val { font-size: 10px; font-weight: bold; color: #111827; margin-top: 2px; word-wrap: break-word; }
-        .top-bar .disc { font-size: 7.5px; color: #9ca3af; text-align: right; line-height: 1.35; }
 
-        .hero { margin-bottom: 14px; padding-top: 2px; }
-        .hero-title { font-size: 28px; font-weight: bold; color: {{ $themeColor }}; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .hero-project { font-size: 14px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 10px; }
-        .meta-table { width: 100%; border-collapse: collapse; }
-        .meta-table td { font-size: 10px; padding: 2px 0; vertical-align: top; }
-        .meta-label { color: #6b7280; width: 120px; }
+        /* Header: title left + logo right (sample jaisa) */
+        .header { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        .header td { vertical-align: top; }
+        .doc-title {
+            font-size: 30px;
+            font-weight: bold;
+            color: {{ $themeColor }};
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+        }
+        .doc-project {
+            font-size: 13px;
+            font-weight: bold;
+            color: {{ $themeColor }};
+            margin-top: 3px;
+            margin-bottom: 8px;
+        }
+        .meta { width: 100%; border-collapse: collapse; }
+        .meta td { padding: 1px 0; font-size: 10px; vertical-align: top; }
+        .meta-label { color: #6b7280; width: 118px; }
         .meta-value { color: #111827; font-weight: bold; }
+        .logo-wrap { text-align: right; }
+        .logo-wrap img { max-height: 52px; max-width: 150px; }
 
-        .parties { width: 100%; border-collapse: collapse; margin: 12px 0 16px; }
-        .parties td { width: 48%; vertical-align: top; }
-        .parties .gap { width: 4%; }
-        .party-title { font-size: 12px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 8px; }
-        .party-name { font-size: 11px; font-weight: bold; color: #111827; margin-bottom: 4px; }
-        .party-line { font-size: 9.5px; color: #374151; line-height: 1.55; word-wrap: break-word; }
+        /* From / For — bade columns, soft box, aligned */
+        .parties {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 8px 0;
+            margin: 10px 0 12px;
+        }
+        .parties td.box {
+            width: 50%;
+            vertical-align: top;
+            background: #FFF4EC;
+            border: 1px solid #f3e8de;
+            padding: 10px 12px;
+        }
+        .party-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: {{ $themeColor }};
+            margin-bottom: 6px;
+        }
+        .party-name {
+            font-size: 12.5px;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 4px;
+            line-height: 1.35;
+        }
+        .party-line {
+            font-size: 10.5px;
+            color: #374151;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
 
-        /* Details tab jaisa table + boarder */
+        /* Items table — sample columns, tight gaps */
         .items {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            overflow: hidden;
         }
         .items thead { display: table-header-group; }
         .items th {
             background-color: {{ $themeColor }};
             color: #fff;
-            font-size: 9px;
+            font-size: 9.5px;
             font-weight: bold;
-            padding: 9px 8px;
+            padding: 8px 7px;
             text-align: left;
             border: none;
         }
         .items th.r { text-align: right; }
         .items th.c { text-align: center; }
         .items td {
-            padding: 9px 8px;
+            padding: 8px 7px;
             vertical-align: top;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 9.5px;
+            border-bottom: 1px solid #f3e8de;
+            font-size: 10px;
             color: #374151;
             word-wrap: break-word;
+            background: #FFF9F5;
         }
         .items td.r { text-align: right; }
         .items td.c { text-align: center; }
-        .items tr:last-child td { border-bottom: none; }
-        .item-title { font-size: 10.5px; font-weight: bold; color: #111827; line-height: 1.4; }
-        .item-body { font-size: 9px; color: #6b7280; line-height: 1.5; margin-top: 4px; }
-        .item-body ul, .item-body ol { margin: 4px 0 4px 16px; padding: 0; }
-        .item-body li { margin: 0 0 3px; }
+        .item-title { font-size: 11px; font-weight: bold; color: #111827; line-height: 1.35; }
+        .item-body { font-size: 9px; color: #4b5563; line-height: 1.45; margin-top: 4px; }
+        .item-body ul, .item-body ol { margin: 3px 0 3px 14px; padding: 0; }
+        .item-body li { margin: 0 0 2px; }
         .hsn { font-size: 8px; color: #9ca3af; margin-top: 4px; }
         .group-row td {
-            background-color: {{ $themeColor }};
+            background-color: {{ $themeColor }} !important;
             color: #fff;
             font-size: 10px;
             font-weight: bold;
-            padding: 8px;
+            padding: 7px;
             border-bottom: none;
         }
 
-        .w-num { width: 6%; }
-        .w-item { width: 42%; }
+        .w-item { width: 46%; }
         .w-qty { width: 12%; }
-        .w-rate { width: 13%; }
-        .w-disc { width: 13%; }
+        .w-rate { width: 14%; }
+        .w-disc { width: 14%; }
         .w-amt { width: 14%; }
 
-        .totals-wrap { margin-top: 14px; width: 100%; border-collapse: collapse; page-break-inside: avoid; }
-        .totals-wrap .words { width: 52%; vertical-align: top; padding-right: 16px; font-size: 10px; color: #111827; word-wrap: break-word; }
-        .totals-wrap .nums { width: 48%; vertical-align: top; }
-        .nums-box {
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 4px 0;
+        /* Totals — table width ke saath align */
+        .totals {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+            page-break-inside: avoid;
         }
+        .totals .words {
+            width: 52%;
+            vertical-align: top;
+            padding-right: 12px;
+            font-size: 10px;
+            color: #111827;
+            word-wrap: break-word;
+        }
+        .totals .nums { width: 48%; vertical-align: top; }
         .nums-table { width: 100%; border-collapse: collapse; }
-        .nums-table td { padding: 6px 10px; font-size: 10px; border-bottom: 1px solid #f3f4f6; }
-        .nums-table tr:last-child td { border-bottom: none; }
+        .nums-table td {
+            padding: 4px 6px;
+            font-size: 10px;
+            border-bottom: 1px solid #f3f4f6;
+        }
         .nums-table td:first-child { color: #6b7280; text-align: left; }
         .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; }
         .nums-table .disc td { color: #dc2626; }
         .nums-table .grand td {
-            font-size: 13px; font-weight: bold; color: {{ $themeColor }};
+            font-size: 12.5px;
+            font-weight: bold;
+            color: {{ $themeColor }};
             border-top: 2px solid {{ $themeColor }};
-            padding-top: 10px;
+            border-bottom: none;
+            padding-top: 7px;
         }
 
         .notes {
-            margin-top: 14px;
+            margin-top: 10px;
             font-size: 9.5px;
             color: #374151;
-            line-height: 1.6;
+            line-height: 1.5;
             word-wrap: break-word;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 10px 12px;
-            background: #f9fafb;
+            background: #FFF9F5;
+            border: 1px solid #f3e8de;
+            padding: 8px 10px;
         }
         .pay-box {
-            margin-top: 14px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 10px 12px;
+            margin-top: 10px;
+            border: 1px solid #f3e8de;
+            background: #FFF9F5;
+            padding: 8px 10px;
             page-break-inside: avoid;
         }
-        .pay-box .ttl { font-size: 10px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 6px; }
-        .pay-box .line { font-size: 9px; color: #374151; margin-bottom: 3px; word-wrap: break-word; }
+        .pay-box .ttl { font-size: 10.5px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 5px; }
+        .pay-box .line { font-size: 9.5px; color: #374151; margin-bottom: 2px; word-wrap: break-word; }
         .bank {
-            margin-top: 12px;
-            padding: 9px 11px;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+            margin-top: 8px;
+            padding: 7px 10px;
+            background: #FFF9F5;
             border-left: 3px solid {{ $themeColor }};
-            border-radius: 8px;
-            font-size: 9px;
+            font-size: 9.5px;
             color: #374151;
             page-break-inside: avoid;
             word-wrap: break-word;
         }
         .sig {
-            margin-top: 20px;
+            margin-top: 16px;
             width: 100%;
             border-collapse: collapse;
-            page-break-inside: avoid;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 12px;
-        }
-        .foot {
-            margin-top: 16px;
-            padding-top: 8px;
-            border-top: 1px solid #e5e7eb;
-            font-size: 8px;
-            color: #9ca3af;
-            text-align: center;
             page-break-inside: avoid;
         }
     </style>
 </head>
 <body>
 
+{{-- Har page pe chhota footer slogan --}}
+<div class="page-footer">
+    This is a computer generated {{ strtolower($typeLabel) }} and does not require a physical signature or stamp.
+</div>
+
 <div class="sheet">
 
-<div class="top-bar">
-    <table>
-        <tr>
-            <td style="width:22%;vertical-align:top;">
-                <div class="lbl">{{ $typeLabel }} No</div>
-                <div class="val">{{ $document->document_number }}</div>
-            </td>
-            <td style="width:22%;vertical-align:top;">
-                <div class="lbl">{{ $typeLabel }} Date</div>
-                <div class="val">{{ optional($document->issue_date)->format('d M Y') }}</div>
-            </td>
-            <td style="width:28%;vertical-align:top;">
-                <div class="lbl">{{ $typeLabel }} For</div>
-                <div class="val">{{ $document->customer_name }}</div>
-            </td>
-            <td style="width:28%;vertical-align:top;" class="disc">
-                <span style="font-size:8px;color:#6b7280;">&nbsp;</span><br>
-                This is an electronically generated document,<br>no signature is required.
-            </td>
-        </tr>
-    </table>
-</div>
-
-<div class="hero">
-    <div class="hero-title">{{ $typeLabel }}</div>
-    @if($document->title)
-    <div class="hero-project">{{ $document->title }}</div>
-    @endif
-    <table class="meta-table">
-        <tr>
-            <td class="meta-label">{{ $typeLabel }} No #</td>
-            <td class="meta-value">{{ $document->document_number }}</td>
-            <td style="width:24px;"></td>
-            <td class="meta-label">{{ $typeLabel }} Date</td>
-            <td class="meta-value">{{ optional($document->issue_date)->format('M d, Y') }}</td>
-        </tr>
-        @if($document->due_date || $document->valid_until)
-        <tr>
-            @if($document->due_date)
-            <td class="meta-label">Due Date</td>
-            <td class="meta-value">{{ $document->due_date->format('M d, Y') }}</td>
-            <td></td>
+{{-- Compact header: title + meta LEFT, logo RIGHT --}}
+<table class="header">
+    <tr>
+        <td style="width:68%;">
+            <div class="doc-title">{{ $typeLabel }}</div>
+            @if($document->title)
+            <div class="doc-project">{{ $document->title }}</div>
             @else
-            <td></td><td></td><td></td>
+            <div style="height:6px;"></div>
             @endif
-            @if($document->valid_until)
-            <td class="meta-label">Valid Until</td>
-            <td class="meta-value">{{ $document->valid_until->format('M d, Y') }}</td>
+            <table class="meta">
+                <tr>
+                    <td class="meta-label">{{ $typeLabel }} No #</td>
+                    <td class="meta-value">{{ $document->document_number }}</td>
+                </tr>
+                <tr>
+                    <td class="meta-label">{{ $typeLabel }} Date</td>
+                    <td class="meta-value">{{ optional($document->issue_date)->format('M d, Y') }}</td>
+                </tr>
+                @if($document->due_date)
+                <tr>
+                    <td class="meta-label">Due Date</td>
+                    <td class="meta-value">{{ $document->due_date->format('M d, Y') }}</td>
+                </tr>
+                @endif
+                @if($document->valid_until)
+                <tr>
+                    <td class="meta-label">Valid Until</td>
+                    <td class="meta-value">{{ $document->valid_until->format('M d, Y') }}</td>
+                </tr>
+                @endif
+            </table>
+        </td>
+        <td style="width:32%;" class="logo-wrap">
+            @if(!empty($logoFile))
+            <img src="{{ $logoFile }}" alt="">
             @else
-            <td></td><td></td>
+            <div style="font-size:14px;font-weight:bold;color:{{ $themeColor }};">{{ $tenant->name ?? '' }}</div>
             @endif
-        </tr>
-        @endif
-    </table>
-</div>
+        </td>
+    </tr>
+</table>
 
+{{-- Company / Customer — equal columns, larger text --}}
 <table class="parties">
     <tr>
-        <td>
+        <td class="box">
             <div class="party-title">{{ $typeLabel }} From</div>
-            @if(!empty($logoFile))
-            <img src="{{ $logoFile }}" style="max-height:42px;max-width:130px;margin-bottom:6px;" alt="">
-            @endif
             <div class="party-name">{{ $tenant->name ?? '' }}</div>
             <div class="party-line">
                 @if($sellerAddress)
@@ -255,8 +286,7 @@
                 @endif
             </div>
         </td>
-        <td class="gap"></td>
-        <td>
+        <td class="box">
             <div class="party-title">{{ $typeLabel }} For</div>
             <div class="party-name">{{ $document->customer_name }}</div>
             <div class="party-line">
@@ -287,9 +317,8 @@
 <table class="items">
     <thead>
         <tr>
-            <th class="w-num c">#</th>
             <th class="w-item">Item</th>
-            <th class="w-qty r">Qty</th>
+            <th class="w-qty c">Quantity</th>
             <th class="w-rate r">Rate</th>
             <th class="w-disc r">Discount</th>
             <th class="w-amt r">Amount</th>
@@ -298,12 +327,11 @@
     <tbody>
         @foreach($rows as $row)
             @if($row['type'] === 'group')
-            <tr class="group-row"><td colspan="6">{{ $row['label'] }}</td></tr>
+            <tr class="group-row"><td colspan="5">{{ $row['label'] }}</td></tr>
             @else
             <tr>
-                <td class="c">{{ $row['num'] }}</td>
                 <td>
-                    <div class="item-title">{{ $row['title'] }}</div>
+                    <div class="item-title">{{ $row['num'] }}. {{ $row['title'] }}</div>
                     @if($row['body'] !== '')
                     <div class="item-body">{!! $row['body'] !!}</div>
                     @endif
@@ -311,7 +339,7 @@
                     <div class="hsn">{{ $row['hsn'] }}</div>
                     @endif
                 </td>
-                <td class="r">
+                <td class="c">
                     {{ $row['qty'] }}
                     @if($row['unit'] !== '')
                     <br><span style="font-size:7.5px;color:#9ca3af;">{{ $row['unit'] }}</span>
@@ -326,7 +354,7 @@
     </tbody>
 </table>
 
-<table class="totals-wrap">
+<table class="totals">
     <tr>
         <td class="words">
             @if($words !== '')
@@ -334,16 +362,14 @@
             @endif
         </td>
         <td class="nums">
-            <div class="nums-box">
-                <table class="nums-table">
-                    @foreach($totals as $t)
-                    <tr class="{{ $t['class'] }}">
-                        <td>{{ $t['label'] }}</td>
-                        <td>{{ $t['value'] }}</td>
-                    </tr>
-                    @endforeach
-                </table>
-            </div>
+            <table class="nums-table">
+                @foreach($totals as $t)
+                <tr class="{{ $t['class'] }}">
+                    <td>{{ $t['label'] }}</td>
+                    <td>{{ $t['value'] }}</td>
+                </tr>
+                @endforeach
+            </table>
         </td>
     </tr>
 </table>
@@ -407,7 +433,7 @@
                 </tr>
                 <tr>
                     <td style="text-align:center;border-top:1px solid #d1d5db;padding-top:6px;">
-                        <strong style="font-size:10px;color:#111827;">{{ $sig['name'] ?? '' }}</strong><br>
+                        <strong style="font-size:10.5px;color:#111827;">{{ $sig['name'] ?? '' }}</strong><br>
                         <span style="font-size:8.5px;color:#6b7280;">{{ $sig['title'] ?? 'Authorised Signatory' }}</span>
                     </td>
                 </tr>
@@ -416,10 +442,6 @@
     </tr>
 </table>
 @endif
-
-<div class="foot">
-    This is a computer generated {{ strtolower($typeLabel) }} and does not require a physical signature or stamp.
-</div>
 
 </div>{{-- /.sheet --}}
 

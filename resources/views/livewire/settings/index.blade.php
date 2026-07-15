@@ -86,18 +86,74 @@
         </div>
     </div>
 
-    {{-- Meeting API Credentials (Live) --}}
-    <div class="grid lg:grid-cols-2 gap-6 mt-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 space-y-3">
+    {{-- Meeting API Credentials (Live) + full how-to guides --}}
+    <div class="mt-6 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm">
+        <p class="font-semibold text-amber-900 dark:text-amber-200 mb-1">Abhi Free Test Mode ON hai — koi keys ki zarurat nahi</p>
+        <p class="text-xs text-amber-800 dark:text-amber-300">Lead → Schedule Meeting → <strong>Create Meeting Link</strong> se invite share ho jayega. Jab real Zoom / Google Meet rooms chahiye, neeche guide follow karke credentials paste + <strong>Save Settings</strong> dabao — badge “CONNECTED / Live API” ho jayega.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6 mt-4">
+        {{-- ZOOM --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 space-y-3" x-data="{ guide: true }">
             <div class="flex items-center justify-between gap-2">
                 <h3 class="font-semibold">🔵 Zoom API Credentials (Live)</h3>
                 <span class="text-[10px] px-2 py-0.5 rounded-full {{ ($meetingStatus['zoom']['mode'] ?? '') === 'live' ? 'bg-green-100 text-green-700' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300' }}">
                     {{ ($meetingStatus['zoom']['mode'] ?? '') === 'live' ? 'CONNECTED' : 'EMPTY — Test Mode' }}
                 </span>
             </div>
-            <p class="text-xs text-gray-500">Zoom Marketplace → Build App → <strong>Server-to-Server OAuth</strong>. Scope: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">meeting:write:admin</code>. Teeno fields bharte hi Live Zoom meetings banegi.</p>
+
+            <button type="button" @click="guide = !guide" class="w-full flex items-center justify-between text-left text-sm font-medium px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
+                <span>📖 Zoom Live setup — kahan se create karein? (step-by-step)</span>
+                <span x-text="guide ? '▲' : '▼'"></span>
+            </button>
+
+            <div x-show="guide" x-cloak class="text-xs text-gray-600 dark:text-gray-300 space-y-3 leading-relaxed border dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/40">
+                <p><strong>Kya chahiye:</strong> free Zoom account (Pro optional) + Server-to-Server OAuth app. Login redirect nahi — 3 values paste karo, bas.</p>
+                <ol class="list-decimal pl-4 space-y-2">
+                    <li>
+                        Browser me kholo:
+                        <a href="https://marketplace.zoom.us/" target="_blank" rel="noopener" class="text-indigo-600 underline font-medium">marketplace.zoom.us</a>
+                        → apne Zoom account se <strong>Sign In</strong>.
+                    </li>
+                    <li>
+                        Top-right <strong>Develop</strong> → <strong>Build App</strong>.
+                    </li>
+                    <li>
+                        App type select karo: <strong>Server-to-Server OAuth</strong> (dusra type mat lo — Webhook/JWT purana hai).
+                        <br>App name likho e.g. <code class="bg-white dark:bg-gray-700 px-1 rounded">CRM Paartech Meetings</code> → Create.
+                    </li>
+                    <li>
+                        <strong>App Credentials</strong> tab me ye 3 cheezein dikhegi — copy karo:
+                        <ul class="list-disc pl-4 mt-1 space-y-0.5">
+                            <li><strong>Account ID</strong> → neeche pehla box</li>
+                            <li><strong>Client ID</strong> → dusra box</li>
+                            <li><strong>Client Secret</strong> → teesra box (secret reveal karke copy)</li>
+                        </ul>
+                    </li>
+                    <li>
+                        Left menu <strong>Scopes</strong> → <strong>Add Scopes</strong> → search:
+                        <code class="bg-white dark:bg-gray-700 px-1 rounded">meeting:write:admin</code>
+                        (ya <code class="bg-white dark:bg-gray-700 px-1 rounded">meeting:write</code>) → Add → Done.
+                        Optional: <code class="bg-white dark:bg-gray-700 px-1 rounded">user:read:admin</code> bhi add kar sakte ho.
+                    </li>
+                    <li>
+                        <strong>Activation</strong> tab → app <strong>Activate</strong> karo (pehle scopes save hona zaroori).
+                    </li>
+                    <li>
+                        Teeno values yahan paste karo → page ke neeche <strong>Save Settings</strong> → Zoom badge <span class="text-green-700 font-semibold">CONNECTED</span> ho jana chahiye.
+                    </li>
+                    <li>
+                        Test: kisi lead pe Schedule Meeting → Zoom → <strong>Create Meeting Link</strong> — asli <code class="bg-white dark:bg-gray-700 px-1 rounded">zoom.us/j/...</code> link aayega.
+                    </li>
+                </ol>
+                <p class="text-[11px] text-gray-500 border-t dark:border-gray-700 pt-2">
+                    Help docs: <a href="https://developers.zoom.us/docs/internal-apps/create/" target="_blank" rel="noopener" class="text-indigo-600 underline">Zoom S2S create guide</a>.
+                    Secret leak ho jaye toh Zoom pe Secret rotate karke yahan naya paste kar dena.
+                </p>
+            </div>
+
             <div>
-                <label class="text-xs text-gray-500 block mb-1">Account ID</label>
+                <label class="text-xs text-gray-500 block mb-1">Account ID <span class="text-gray-400">(App Credentials se)</span></label>
                 <input wire:model="zoomAccountId" placeholder="Zoom Account ID" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono">
             </div>
             <div>
@@ -110,16 +166,92 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 space-y-3">
+        {{-- GOOGLE --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 space-y-3" x-data="{ guide: true }">
             <div class="flex items-center justify-between gap-2">
                 <h3 class="font-semibold">🟢 Google Meet / Calendar Credentials (Live)</h3>
                 <span class="text-[10px] px-2 py-0.5 rounded-full {{ ($meetingStatus['google_meet']['mode'] ?? '') === 'live' ? 'bg-green-100 text-green-700' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300' }}">
                     {{ ($meetingStatus['google_meet']['mode'] ?? '') === 'live' ? 'CONNECTED' : 'EMPTY — Test Mode' }}
                 </span>
             </div>
-            <p class="text-xs text-gray-500">Google Cloud Console → enable <strong>Google Calendar API</strong> → OAuth Client (Web). Phir OAuth Playground / app se Refresh Token generate karke yahan paste karo. Teeno fields bharte hi Live Meet link Calendar se banegi.</p>
+
+            <button type="button" @click="guide = !guide" class="w-full flex items-center justify-between text-left text-sm font-medium px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800">
+                <span>📖 Google Meet Live setup — kahan se create karein? (step-by-step)</span>
+                <span x-text="guide ? '▲' : '▼'"></span>
+            </button>
+
+            <div x-show="guide" x-cloak class="text-xs text-gray-600 dark:text-gray-300 space-y-3 leading-relaxed border dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/40">
+                <p><strong>Kya chahiye:</strong> Google account + free Google Cloud project. Meet link Calendar event ke saath banega (Google ka standard tarika).</p>
+                <p class="font-semibold text-gray-800 dark:text-gray-100">A) Client ID + Client Secret banana</p>
+                <ol class="list-decimal pl-4 space-y-2">
+                    <li>
+                        Kholo:
+                        <a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="text-indigo-600 underline font-medium">console.cloud.google.com</a>
+                        → apne Google account se login.
+                    </li>
+                    <li>
+                        Top pe project dropdown → <strong>New Project</strong> → name e.g. <code class="bg-white dark:bg-gray-700 px-1 rounded">CRM Paartech</code> → Create → us project ko select karo.
+                    </li>
+                    <li>
+                        Left menu <strong>APIs &amp; Services</strong> → <strong>Library</strong> → search <strong>Google Calendar API</strong> → <strong>Enable</strong>.
+                    </li>
+                    <li>
+                        <strong>APIs &amp; Services</strong> → <strong>OAuth consent screen</strong>:
+                        <ul class="list-disc pl-4 mt-1 space-y-0.5">
+                            <li>User Type: <strong>External</strong> (personal Gmail) ya Internal (Workspace)</li>
+                            <li>App name, User support email, Developer contact — bharo → Save</li>
+                            <li>Scopes: <code class="bg-white dark:bg-gray-700 px-1 rounded">https://www.googleapis.com/auth/calendar.events</code> add karo</li>
+                            <li>Test users: apna Gmail add karo (External + Testing mode me zaroori)</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Credentials</strong> → <strong>+ Create Credentials</strong> → <strong>OAuth client ID</strong>:
+                        <ul class="list-disc pl-4 mt-1 space-y-0.5">
+                            <li>Application type: <strong>Web application</strong></li>
+                            <li>Name: e.g. CRM Meet</li>
+                            <li>Authorized redirect URIs me ye add karo (exact):
+                                <br><code class="bg-white dark:bg-gray-700 px-1 rounded break-all">https://developers.google.com/oauthplayground</code>
+                                <br>(Refresh token generate karne ke liye Playground use karenge)
+                            </li>
+                            <li>Create → <strong>Client ID</strong> aur <strong>Client Secret</strong> copy → neeche boxes me paste</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <p class="font-semibold text-gray-800 dark:text-gray-100">B) Refresh Token banana (ek baar)</p>
+                <ol class="list-decimal pl-4 space-y-2" start="6">
+                    <li>
+                        Kholo:
+                        <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noopener" class="text-indigo-600 underline font-medium">developers.google.com/oauthplayground</a>
+                    </li>
+                    <li>
+                        Top-right ⚙️ <strong>OAuth 2.0 configuration</strong> → tick <strong>Use your own OAuth credentials</strong>
+                        → wahi Client ID + Client Secret paste → Close.
+                    </li>
+                    <li>
+                        Left list me Step 1 → search / select:
+                        <br><code class="bg-white dark:bg-gray-700 px-1 rounded break-all">https://www.googleapis.com/auth/calendar.events</code>
+                        → <strong>Authorize APIs</strong> → apna Google account choose → Allow.
+                    </li>
+                    <li>
+                        Step 2 → <strong>Exchange authorization code for tokens</strong> dabao.
+                        <br>Jo <strong>Refresh token</strong> dikhe → poora copy → neeche Refresh Token box me paste.
+                    </li>
+                    <li>
+                        Is CRM page pe <strong>Save Settings</strong> → Google badge <span class="text-green-700 font-semibold">CONNECTED</span>.
+                    </li>
+                    <li>
+                        Test: Lead → Schedule Meeting → Google Meet → Create Meeting Link — Calendar pe Meet wali asli link aayegi; lead ka email guest bhi add ho sakta hai.
+                    </li>
+                </ol>
+                <p class="text-[11px] text-gray-500 border-t dark:border-gray-700 pt-2">
+                    Note: Publishing status “Testing” me sirf Test users hi allow hote hain — pehle apna email add kar lena.
+                    Production company-wide ke liye consent screen Publish + verification (Google process) later kar sakte ho.
+                </p>
+            </div>
+
             <div>
-                <label class="text-xs text-gray-500 block mb-1">Client ID</label>
+                <label class="text-xs text-gray-500 block mb-1">Client ID <span class="text-gray-400">(Google Cloud → Credentials)</span></label>
                 <input wire:model="googleClientId" placeholder="xxxx.apps.googleusercontent.com" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono">
             </div>
             <div>
@@ -127,10 +259,10 @@
                 <input type="password" wire:model="googleClientSecret" placeholder="Google Client Secret" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono" autocomplete="new-password">
             </div>
             <div>
-                <label class="text-xs text-gray-500 block mb-1">Refresh Token</label>
+                <label class="text-xs text-gray-500 block mb-1">Refresh Token <span class="text-gray-400">(OAuth Playground se — Part B)</span></label>
                 <textarea wire:model="googleRefreshToken" rows="2" placeholder="1//0gxxxxxxxx..." class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm font-mono"></textarea>
             </div>
-            <p class="text-[11px] text-gray-400">Tip: credentials empty chhodoge toh Free Test Mode automatically chalti rahegi — CRM meeting link khud generate karega.</p>
+            <p class="text-[11px] text-gray-400">Fields khali chhodoge toh Free Test Mode automatically chalti rahegi.</p>
         </div>
     </div>
 

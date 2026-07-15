@@ -533,7 +533,7 @@
                 <button wire:click="$set('showMeetingModal', false)" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
                 <button wire:click="shareMeeting" class="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium">Share Invite & Log</button>
             </div>
-            <p class="text-xs text-gray-400 mt-2">Link empty ho toh Share pe click karte hi auto-create ho jayega. Templates: Settings → Meeting Settings.</p>
+            <p class="text-xs text-gray-400 mt-2">Link empty ho toh Share pe click karte hi auto-create ho jayega. Live API keys + poori guide: <a href="{{ route('leads.settings') }}" class="text-indigo-600 underline">Settings → Meeting API Credentials</a>.</p>
         </div>
     </div>
     @endif

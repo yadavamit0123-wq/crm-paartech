@@ -93,13 +93,9 @@
                 <button @click="view = 'details'" :class="view === 'details' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-300'" class="px-4 py-1.5 rounded-md text-sm font-medium transition">Details</button>
             </div>
 
-            {{-- Preview: margin sirf is box ke andar — PDF/A4 par alag margin nahi --}}
-            <div x-show="view === 'pdf'" class="bg-gray-100 dark:bg-gray-900 rounded-xl border dark:border-gray-700 overflow-hidden">
-                <div style="padding: 20mm;">
-                    <div class="mx-auto max-w-4xl bg-white shadow-md rounded-sm overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700">
-                        <iframe src="{{ route('leads.documents.pdf', $document) }}#toolbar=0&view=FitH" class="w-full bg-white block" style="height: 72vh; border: 0;" title="PDF Preview"></iframe>
-                    </div>
-                </div>
+            {{-- Preview card — Details jaisa white border/shadow; PDF content same --}}
+            <div x-show="view === 'pdf'" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700 overflow-hidden">
+                <iframe src="{{ route('leads.documents.pdf', $document) }}#toolbar=0&view=FitH" class="w-full bg-white rounded-lg border dark:border-gray-700" style="height: 72vh; border-width: 1px;" title="PDF Preview"></iframe>
             </div>
 
             <div x-show="view === 'details'" x-cloak class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700">

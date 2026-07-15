@@ -4,13 +4,20 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $document->document_number }}</title>
     <style>
-        @@page { size: A4 portrait; margin: 16mm 14mm 16mm 14mm; }
+        @@page { size: A4 portrait; margin: 14mm 12mm 14mm 12mm; }
         * { margin: 0; padding: 0; }
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 10px;
             color: #1f2937;
             line-height: 1.45;
+        }
+
+        /* Details-card jaisa outer boarder */
+        .sheet {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px 14px;
         }
 
         .top-bar {
@@ -24,71 +31,147 @@
         .top-bar .disc { font-size: 7.5px; color: #9ca3af; text-align: right; line-height: 1.35; }
 
         .hero { margin-bottom: 14px; padding-top: 2px; }
-        .hero-title { font-size: 32px; font-weight: bold; color: {{ $themeColor }}; letter-spacing: -0.6px; margin-bottom: 4px; }
-        .hero-project { font-size: 15px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 12px; }
+        .hero-title { font-size: 28px; font-weight: bold; color: {{ $themeColor }}; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .hero-project { font-size: 14px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 10px; }
         .meta-table { width: 100%; border-collapse: collapse; }
         .meta-table td { font-size: 10px; padding: 2px 0; vertical-align: top; }
         .meta-label { color: #6b7280; width: 120px; }
         .meta-value { color: #111827; font-weight: bold; }
 
-        .parties { width: 100%; border-collapse: collapse; margin: 14px 0 18px; }
+        .parties { width: 100%; border-collapse: collapse; margin: 12px 0 16px; }
         .parties td { width: 48%; vertical-align: top; }
         .parties .gap { width: 4%; }
         .party-title { font-size: 12px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 8px; }
         .party-name { font-size: 11px; font-weight: bold; color: #111827; margin-bottom: 4px; }
         .party-line { font-size: 9.5px; color: #374151; line-height: 1.55; word-wrap: break-word; }
 
-        .items { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        /* Details tab jaisa table + boarder */
+        .items {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
         .items thead { display: table-header-group; }
         .items th {
-            background-color: {{ $themeColor }}; color: #fff; font-size: 9px; font-weight: bold;
-            padding: 9px 8px; text-align: left; border: none;
+            background-color: {{ $themeColor }};
+            color: #fff;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 9px 8px;
+            text-align: left;
+            border: none;
         }
         .items th.r { text-align: right; }
+        .items th.c { text-align: center; }
         .items td {
-            padding: 10px 8px; vertical-align: top; border-bottom: 1px solid #f3f4f6;
-            font-size: 9.5px; color: #374151; word-wrap: break-word;
+            padding: 9px 8px;
+            vertical-align: top;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 9.5px;
+            color: #374151;
+            word-wrap: break-word;
         }
         .items td.r { text-align: right; }
-        .item-title { font-size: 10.5px; font-weight: bold; color: #111827; line-height: 1.4; margin-bottom: 4px; }
-        .item-body { font-size: 9px; color: #4b5563; line-height: 1.5; margin-top: 4px; }
+        .items td.c { text-align: center; }
+        .items tr:last-child td { border-bottom: none; }
+        .item-title { font-size: 10.5px; font-weight: bold; color: #111827; line-height: 1.4; }
+        .item-body { font-size: 9px; color: #6b7280; line-height: 1.5; margin-top: 4px; }
         .item-body ul, .item-body ol { margin: 4px 0 4px 16px; padding: 0; }
         .item-body li { margin: 0 0 3px; }
-        .hsn { font-size: 8px; color: #9ca3af; margin-top: 5px; }
-        .group { font-size: 10px; font-weight: bold; color: {{ $themeColor }}; padding: 8px 0 4px; border-bottom: 1px dashed #e5e7eb; }
+        .hsn { font-size: 8px; color: #9ca3af; margin-top: 4px; }
+        .group-row td {
+            background-color: {{ $themeColor }};
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 8px;
+            border-bottom: none;
+        }
 
-        .w-item { width: 48%; } .w-qty { width: 12%; } .w-rate { width: 13%; } .w-disc { width: 13%; } .w-amt { width: 14%; }
+        .w-num { width: 6%; }
+        .w-item { width: 42%; }
+        .w-qty { width: 12%; }
+        .w-rate { width: 13%; }
+        .w-disc { width: 13%; }
+        .w-amt { width: 14%; }
 
-        .totals { width: 100%; margin-top: 16px; border-collapse: collapse; page-break-inside: avoid; }
-        .totals .words { width: 52%; vertical-align: top; padding-right: 18px; font-size: 10px; color: #111827; word-wrap: break-word; }
-        .totals .nums { width: 48%; vertical-align: top; }
+        .totals-wrap { margin-top: 14px; width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+        .totals-wrap .words { width: 52%; vertical-align: top; padding-right: 16px; font-size: 10px; color: #111827; word-wrap: break-word; }
+        .totals-wrap .nums { width: 48%; vertical-align: top; }
+        .nums-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 4px 0;
+        }
         .nums-table { width: 100%; border-collapse: collapse; }
-        .nums-table td { padding: 5px 6px; font-size: 10px; border-bottom: 1px solid #f3f4f6; }
+        .nums-table td { padding: 6px 10px; font-size: 10px; border-bottom: 1px solid #f3f4f6; }
+        .nums-table tr:last-child td { border-bottom: none; }
         .nums-table td:first-child { color: #6b7280; text-align: left; }
         .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; }
         .nums-table .disc td { color: #dc2626; }
         .nums-table .grand td {
             font-size: 13px; font-weight: bold; color: {{ $themeColor }};
-            border-top: 2px solid {{ $themeColor }}; border-bottom: none; padding-top: 9px;
+            border-top: 2px solid {{ $themeColor }};
+            padding-top: 10px;
         }
 
-        .notes { margin-top: 16px; font-size: 9.5px; color: #374151; line-height: 1.6; word-wrap: break-word; }
-        .pay-box { margin-top: 14px; border: 1px solid #e5e7eb; padding: 10px 12px; page-break-inside: avoid; }
+        .notes {
+            margin-top: 14px;
+            font-size: 9.5px;
+            color: #374151;
+            line-height: 1.6;
+            word-wrap: break-word;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 12px;
+            background: #f9fafb;
+        }
+        .pay-box {
+            margin-top: 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 12px;
+            page-break-inside: avoid;
+        }
         .pay-box .ttl { font-size: 10px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 6px; }
         .pay-box .line { font-size: 9px; color: #374151; margin-bottom: 3px; word-wrap: break-word; }
         .bank {
-            margin-top: 12px; padding: 9px 11px; background: #f9fafb;
-            border-left: 3px solid {{ $themeColor }}; font-size: 9px; color: #374151;
-            page-break-inside: avoid; word-wrap: break-word;
+            margin-top: 12px;
+            padding: 9px 11px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-left: 3px solid {{ $themeColor }};
+            border-radius: 8px;
+            font-size: 9px;
+            color: #374151;
+            page-break-inside: avoid;
+            word-wrap: break-word;
         }
-        .sig { margin-top: 22px; width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+        .sig {
+            margin-top: 20px;
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 12px;
+        }
         .foot {
-            margin-top: 18px; padding-top: 8px; border-top: 1px solid #e5e7eb;
-            font-size: 8px; color: #9ca3af; text-align: center; page-break-inside: avoid;
+            margin-top: 16px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 8px;
+            color: #9ca3af;
+            text-align: center;
+            page-break-inside: avoid;
         }
     </style>
 </head>
 <body>
+
+<div class="sheet">
 
 <div class="top-bar">
     <table>
@@ -204,8 +287,9 @@
 <table class="items">
     <thead>
         <tr>
+            <th class="w-num c">#</th>
             <th class="w-item">Item</th>
-            <th class="w-qty r">Quantity</th>
+            <th class="w-qty r">Qty</th>
             <th class="w-rate r">Rate</th>
             <th class="w-disc r">Discount</th>
             <th class="w-amt r">Amount</th>
@@ -214,11 +298,12 @@
     <tbody>
         @foreach($rows as $row)
             @if($row['type'] === 'group')
-            <tr><td colspan="5"><div class="group">{{ $row['label'] }}</div></td></tr>
+            <tr class="group-row"><td colspan="6">{{ $row['label'] }}</td></tr>
             @else
             <tr>
+                <td class="c">{{ $row['num'] }}</td>
                 <td>
-                    <div class="item-title">{{ $row['num'] }}. {{ $row['title'] }}</div>
+                    <div class="item-title">{{ $row['title'] }}</div>
                     @if($row['body'] !== '')
                     <div class="item-body">{!! $row['body'] !!}</div>
                     @endif
@@ -241,7 +326,7 @@
     </tbody>
 </table>
 
-<table class="totals">
+<table class="totals-wrap">
     <tr>
         <td class="words">
             @if($words !== '')
@@ -249,14 +334,16 @@
             @endif
         </td>
         <td class="nums">
-            <table class="nums-table">
-                @foreach($totals as $t)
-                <tr class="{{ $t['class'] }}">
-                    <td>{{ $t['label'] }}</td>
-                    <td>{{ $t['value'] }}</td>
-                </tr>
-                @endforeach
-            </table>
+            <div class="nums-box">
+                <table class="nums-table">
+                    @foreach($totals as $t)
+                    <tr class="{{ $t['class'] }}">
+                        <td>{{ $t['label'] }}</td>
+                        <td>{{ $t['value'] }}</td>
+                    </tr>
+                    @endforeach
+                </table>
+            </div>
         </td>
     </tr>
 </table>
@@ -333,6 +420,8 @@
 <div class="foot">
     This is a computer generated {{ strtolower($typeLabel) }} and does not require a physical signature or stamp.
 </div>
+
+</div>{{-- /.sheet --}}
 
 </body>
 </html>

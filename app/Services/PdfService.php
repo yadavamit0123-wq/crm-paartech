@@ -18,7 +18,6 @@ class PdfService
 
         $pdf = Pdf::loadView('pdf.document', $payload);
         $pdf->setPaper('a4', 'portrait');
-        // PHP scripts / remote URLs DomPDF pe cPanel pe 500 dete hain — band rakho
         $pdf->setOption('isHtml5ParserEnabled', true);
         $pdf->setOption('isPhpEnabled', false);
         $pdf->setOption('isRemoteEnabled', false);
@@ -29,12 +28,34 @@ class PdfService
         return $pdf;
     }
 
+    /**
+     * Render + stamp "Page X of Y" like the sample footer (right side).
+     */
+    protected function renderedPdfOutput(Document $document): string
+    {
+        $pdf = $this->generateDocumentPdf($document);
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+        if ($canvas && $font) {
+            // A4 points (~595×842); bottom-right near sample footer meta row
+            $canvas->page_text(472, 798, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 8, [0.17, 0.24, 0.31]);
+        }
+
+        return $dompdf->output();
+    }
+
     public function download(Document $document)
     {
         try {
             $filename = str_replace('/', '-', (string) $document->document_number).'.pdf';
 
-            return $this->generateDocumentPdf($document)->download($filename);
+            return response($this->renderedPdfOutput($document), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            ]);
         } catch (Throwable $e) {
             Log::error('PDF download failed', ['doc' => $document->id, 'error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
             throw $e;
@@ -44,9 +65,12 @@ class PdfService
     public function stream(Document $document)
     {
         try {
-            return $this->generateDocumentPdf($document)->stream(
-                str_replace('/', '-', (string) $document->document_number).'.pdf'
-            );
+            $filename = str_replace('/', '-', (string) $document->document_number).'.pdf';
+
+            return response($this->renderedPdfOutput($document), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            ]);
         } catch (Throwable $e) {
             Log::error('PDF stream failed', ['doc' => $document->id, 'error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
             throw $e;

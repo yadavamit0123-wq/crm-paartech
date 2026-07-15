@@ -4,9 +4,23 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $document->document_number }}</title>
     <style>
-        /* Compact A4: room for repeating footer on every page */
-        @@page { size: A4 portrait; margin: 12mm 11mm 16mm 11mm; }
+        /*
+         * Sample Quotation layout (A4):
+         * - ~20mm free white margin around page
+         * - Thin grey outliner around content
+         * - Logo top-right in light box
+         * - Title + meta left
+         * - Peach From / For boxes
+         * - Orange table header (repeats)
+         * - Footer every page: No | Date | For | Page X of Y + small disclaimer
+         */
+        @@page {
+            size: A4 portrait;
+            margin: 18mm 16mm 24mm 16mm;
+        }
+
         * { margin: 0; padding: 0; }
+
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 10px;
@@ -14,83 +28,139 @@
             line-height: 1.4;
         }
 
-        /* Page outliner — content ke aligned professional border */
+        /* Content outliner — sample jaisa thin grey border */
         .sheet {
-            border: 2px solid #d1d5db;
-            padding: 12px 12px 10px;
+            border: 1px solid #9ca3af;
+            padding: 14px 14px 12px;
         }
 
-        /* Footer: har page pe chhota slogan (DomPDF fixed) */
+        /* ========== FOOTER (fixed → har page) ========== */
         .page-footer {
             position: fixed;
             left: 0;
             right: 0;
-            bottom: -11mm;
-            text-align: center;
+            bottom: -18mm;
+            height: 16mm;
+        }
+        .page-footer .rule {
+            border-top: 1px dashed #d1d5db;
+            margin-bottom: 5px;
+        }
+        .page-footer .meta {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .page-footer .meta td {
+            vertical-align: top;
+            width: 25%;
+            padding-right: 6px;
+        }
+        .page-footer .lbl {
             font-size: 7px;
             color: #9ca3af;
-            line-height: 1.3;
+            line-height: 1.2;
+        }
+        .page-footer .val {
+            font-size: 9px;
+            font-weight: bold;
+            color: #111827;
+            margin-top: 1px;
+            word-wrap: break-word;
+        }
+        .page-footer .disclaimer {
+            margin-top: 4px;
+            font-size: 6.5px;
+            color: #9ca3af;
+            font-style: italic;
+        }
+        .pagenum-slot {
+            text-align: right;
+            font-size: 9px;
+            font-weight: bold;
+            color: #111827;
+            padding-top: 10px;
         }
 
-        /* Header: title left + logo right (sample jaisa) */
-        .header { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-        .header td { vertical-align: top; }
+        /* ========== HEADER ========== */
+        .hdr {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .hdr td { vertical-align: top; }
         .doc-title {
-            font-size: 30px;
+            font-size: 32px;
             font-weight: bold;
             color: {{ $themeColor }};
-            letter-spacing: -0.5px;
-            line-height: 1.1;
+            letter-spacing: -0.6px;
+            line-height: 1.05;
         }
         .doc-project {
             font-size: 13px;
+            color: #6b7280;
+            margin: 4px 0 10px;
+            font-weight: normal;
+        }
+        .meta-lines { width: auto; border-collapse: collapse; }
+        .meta-lines td {
+            padding: 1px 0;
+            font-size: 10px;
+            vertical-align: top;
+        }
+        .meta-lines .k { color: #4b5563; padding-right: 10px; white-space: nowrap; }
+        .meta-lines .v { color: #111827; font-weight: bold; }
+
+        .logo-box {
+            border: 1px solid #e5e7eb;
+            padding: 8px 10px;
+            text-align: center;
+        }
+        .logo-box img {
+            max-height: 48px;
+            max-width: 140px;
+        }
+        .logo-fallback {
+            font-size: 13px;
             font-weight: bold;
             color: {{ $themeColor }};
-            margin-top: 3px;
-            margin-bottom: 8px;
+            max-width: 140px;
         }
-        .meta { width: 100%; border-collapse: collapse; }
-        .meta td { padding: 1px 0; font-size: 10px; vertical-align: top; }
-        .meta-label { color: #6b7280; width: 118px; }
-        .meta-value { color: #111827; font-weight: bold; }
-        .logo-wrap { text-align: right; }
-        .logo-wrap img { max-height: 52px; max-width: 150px; }
 
-        /* From / For — bade columns, soft box, aligned */
+        /* ========== FROM / FOR (peach boxes) ========== */
         .parties {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 8px 0;
-            margin: 10px 0 12px;
+            border-collapse: collapse;
+            margin: 0 0 12px;
         }
         .parties td.box {
-            width: 50%;
+            width: 49%;
             vertical-align: top;
-            background: #FFF4EC;
-            border: 1px solid #f3e8de;
+            background-color: #FFF4EC;
+            border: 1px solid #F3E0D0;
             padding: 10px 12px;
         }
-        .party-title {
-            font-size: 13px;
+        .parties td.gap { width: 2%; }
+        .party-h {
+            font-size: 12px;
             font-weight: bold;
             color: {{ $themeColor }};
             margin-bottom: 6px;
         }
         .party-name {
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: bold;
             color: #111827;
             margin-bottom: 4px;
             line-height: 1.35;
         }
-        .party-line {
-            font-size: 10.5px;
+        .party-body {
+            font-size: 10px;
             color: #374151;
             line-height: 1.5;
             word-wrap: break-word;
         }
 
-        /* Items table — sample columns, tight gaps */
+        /* ========== ITEMS TABLE ========== */
         .items {
             width: 100%;
             border-collapse: collapse;
@@ -99,57 +169,74 @@
         .items thead { display: table-header-group; }
         .items th {
             background-color: {{ $themeColor }};
-            color: #fff;
+            color: #ffffff;
             font-size: 9.5px;
             font-weight: bold;
-            padding: 8px 7px;
+            padding: 8px 8px;
             text-align: left;
             border: none;
         }
         .items th.r { text-align: right; }
         .items th.c { text-align: center; }
         .items td {
-            padding: 8px 7px;
+            background-color: #FFF9F5;
+            padding: 8px 8px;
             vertical-align: top;
-            border-bottom: 1px solid #f3e8de;
+            border-bottom: 1px solid #F3E0D0;
             font-size: 10px;
             color: #374151;
             word-wrap: break-word;
-            background: #FFF9F5;
         }
         .items td.r { text-align: right; }
         .items td.c { text-align: center; }
-        .item-title { font-size: 11px; font-weight: bold; color: #111827; line-height: 1.35; }
-        .item-body { font-size: 9px; color: #4b5563; line-height: 1.45; margin-top: 4px; }
-        .item-body ul, .item-body ol { margin: 3px 0 3px 14px; padding: 0; }
-        .item-body li { margin: 0 0 2px; }
-        .hsn { font-size: 8px; color: #9ca3af; margin-top: 4px; }
-        .group-row td {
-            background-color: {{ $themeColor }} !important;
-            color: #fff;
-            font-size: 10px;
+        .item-title {
+            font-size: 11px;
             font-weight: bold;
-            padding: 7px;
+            color: #111827;
+            line-height: 1.35;
+        }
+        .item-body {
+            font-size: 9px;
+            color: #4b5563;
+            line-height: 1.45;
+            margin-top: 5px;
+        }
+        .item-body ul, .item-body ol {
+            margin: 3px 0 3px 14px;
+            padding: 0;
+        }
+        .item-body li { margin: 0 0 2px; }
+        .hsn {
+            font-size: 8px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+        .group td {
+            background-color: {{ $themeColor }};
+            color: #fff;
+            font-weight: bold;
+            font-size: 10px;
+            padding: 7px 8px;
             border-bottom: none;
         }
 
-        .w-item { width: 46%; }
-        .w-qty { width: 12%; }
-        .w-rate { width: 14%; }
-        .w-disc { width: 14%; }
-        .w-amt { width: 14%; }
+        .col-item { width: 48%; }
+        .col-qty { width: 12%; }
+        .col-rate { width: 13%; }
+        .col-disc { width: 13%; }
+        .col-amt { width: 14%; }
 
-        /* Totals — table width ke saath align */
+        /* ========== TOTALS ========== */
         .totals {
             width: 100%;
-            margin-top: 10px;
             border-collapse: collapse;
+            margin-top: 12px;
             page-break-inside: avoid;
         }
         .totals .words {
             width: 52%;
             vertical-align: top;
-            padding-right: 12px;
+            padding-right: 14px;
             font-size: 10px;
             color: #111827;
             word-wrap: break-word;
@@ -157,7 +244,7 @@
         .totals .nums { width: 48%; vertical-align: top; }
         .nums-table { width: 100%; border-collapse: collapse; }
         .nums-table td {
-            padding: 4px 6px;
+            padding: 4px 4px;
             font-size: 10px;
             border-bottom: 1px solid #f3f4f6;
         }
@@ -165,33 +252,31 @@
         .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; }
         .nums-table .disc td { color: #dc2626; }
         .nums-table .grand td {
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: bold;
-            color: {{ $themeColor }};
-            border-top: 2px solid {{ $themeColor }};
-            border-bottom: none;
-            padding-top: 7px;
+            color: #111827;
+            border-top: 1.5px solid #111827;
+            border-bottom: 1.5px solid #111827;
+            padding: 7px 4px;
         }
 
-        .notes {
+        .block {
             margin-top: 10px;
+            background: #FFF9F5;
+            border: 1px solid #F3E0D0;
+            padding: 8px 10px;
             font-size: 9.5px;
             color: #374151;
             line-height: 1.5;
             word-wrap: break-word;
-            background: #FFF9F5;
-            border: 1px solid #f3e8de;
-            padding: 8px 10px;
-        }
-        .pay-box {
-            margin-top: 10px;
-            border: 1px solid #f3e8de;
-            background: #FFF9F5;
-            padding: 8px 10px;
             page-break-inside: avoid;
         }
-        .pay-box .ttl { font-size: 10.5px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 5px; }
-        .pay-box .line { font-size: 9.5px; color: #374151; margin-bottom: 2px; word-wrap: break-word; }
+        .block .ttl {
+            font-size: 10.5px;
+            font-weight: bold;
+            color: {{ $themeColor }};
+            margin-bottom: 4px;
+        }
         .bank {
             margin-top: 8px;
             padding: 7px 10px;
@@ -199,8 +284,8 @@
             border-left: 3px solid {{ $themeColor }};
             font-size: 9.5px;
             color: #374151;
-            page-break-inside: avoid;
             word-wrap: break-word;
+            page-break-inside: avoid;
         }
         .sig {
             margin-top: 16px;
@@ -212,63 +297,88 @@
 </head>
 <body>
 
-{{-- Har page pe chhota footer slogan --}}
+{{-- ========== SAMPLE FOOTER — every page ========== --}}
 <div class="page-footer">
-    This is a computer generated {{ strtolower($typeLabel) }} and does not require a physical signature or stamp.
+    <div class="rule"></div>
+    <table class="meta">
+        <tr>
+            <td>
+                <div class="lbl">{{ $typeLabel }} No</div>
+                <div class="val">{{ $document->document_number }}</div>
+            </td>
+            <td>
+                <div class="lbl">{{ $typeLabel }} Date</div>
+                <div class="val">{{ optional($document->issue_date)->format('d M Y') }}</div>
+            </td>
+            <td>
+                <div class="lbl">{{ $typeLabel }} For</div>
+                <div class="val">{{ $document->customer_name }}</div>
+            </td>
+            <td>
+                <div class="lbl" style="text-align:right;">&nbsp;</div>
+                <div class="pagenum-slot">
+                    {{-- filled by DomPDF page_text --}}
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div class="disclaimer">This is an electronically generated document, no signature is required.</div>
 </div>
 
 <div class="sheet">
 
-{{-- Compact header: title + meta LEFT, logo RIGHT --}}
-<table class="header">
+{{-- ========== HEADER: title+meta LEFT | logo box RIGHT ========== --}}
+<table class="hdr">
     <tr>
-        <td style="width:68%;">
+        <td style="width:70%;">
             <div class="doc-title">{{ $typeLabel }}</div>
             @if($document->title)
             <div class="doc-project">{{ $document->title }}</div>
             @else
-            <div style="height:6px;"></div>
+            <div style="height:8px;"></div>
             @endif
-            <table class="meta">
+            <table class="meta-lines">
                 <tr>
-                    <td class="meta-label">{{ $typeLabel }} No #</td>
-                    <td class="meta-value">{{ $document->document_number }}</td>
+                    <td class="k">{{ $typeLabel }} No #</td>
+                    <td class="v">{{ $document->document_number }}</td>
                 </tr>
                 <tr>
-                    <td class="meta-label">{{ $typeLabel }} Date</td>
-                    <td class="meta-value">{{ optional($document->issue_date)->format('M d, Y') }}</td>
+                    <td class="k">{{ $typeLabel }} Date</td>
+                    <td class="v">{{ optional($document->issue_date)->format('M d, Y') }}</td>
                 </tr>
                 @if($document->due_date)
                 <tr>
-                    <td class="meta-label">Due Date</td>
-                    <td class="meta-value">{{ $document->due_date->format('M d, Y') }}</td>
+                    <td class="k">Due Date</td>
+                    <td class="v">{{ $document->due_date->format('M d, Y') }}</td>
                 </tr>
                 @endif
                 @if($document->valid_until)
                 <tr>
-                    <td class="meta-label">Valid Until</td>
-                    <td class="meta-value">{{ $document->valid_until->format('M d, Y') }}</td>
+                    <td class="k">Valid Until</td>
+                    <td class="v">{{ $document->valid_until->format('M d, Y') }}</td>
                 </tr>
                 @endif
             </table>
         </td>
-        <td style="width:32%;" class="logo-wrap">
-            @if(!empty($logoFile))
-            <img src="{{ $logoFile }}" alt="">
-            @else
-            <div style="font-size:14px;font-weight:bold;color:{{ $themeColor }};">{{ $tenant->name ?? '' }}</div>
-            @endif
+        <td style="width:30%;text-align:right;">
+            <div class="logo-box">
+                @if(!empty($logoFile))
+                <img src="{{ $logoFile }}" alt="">
+                @else
+                <div class="logo-fallback">{{ $tenant->name ?? '' }}</div>
+                @endif
+            </div>
         </td>
     </tr>
 </table>
 
-{{-- Company / Customer — equal columns, larger text --}}
+{{-- ========== FROM / FOR peach boxes ========== --}}
 <table class="parties">
     <tr>
         <td class="box">
-            <div class="party-title">{{ $typeLabel }} From</div>
+            <div class="party-h">{{ $typeLabel }} From</div>
             <div class="party-name">{{ $tenant->name ?? '' }}</div>
-            <div class="party-line">
+            <div class="party-body">
                 @if($sellerAddress)
                     {{ $sellerAddress }}<br>
                 @endif
@@ -286,10 +396,11 @@
                 @endif
             </div>
         </td>
+        <td class="gap"></td>
         <td class="box">
-            <div class="party-title">{{ $typeLabel }} For</div>
+            <div class="party-h">{{ $typeLabel }} For</div>
             <div class="party-name">{{ $document->customer_name }}</div>
-            <div class="party-line">
+            <div class="party-body">
                 @if($document->customer_address)
                     {{ $document->customer_address }}<br>
                 @endif
@@ -314,20 +425,21 @@
     </tr>
 </table>
 
+{{-- ========== ITEMS (header repeats on every page) ========== --}}
 <table class="items">
     <thead>
         <tr>
-            <th class="w-item">Item</th>
-            <th class="w-qty c">Quantity</th>
-            <th class="w-rate r">Rate</th>
-            <th class="w-disc r">Discount</th>
-            <th class="w-amt r">Amount</th>
+            <th class="col-item">Item</th>
+            <th class="col-qty c">Quantity</th>
+            <th class="col-rate r">Rate</th>
+            <th class="col-disc r">Discount</th>
+            <th class="col-amt r">Amount</th>
         </tr>
     </thead>
     <tbody>
         @foreach($rows as $row)
             @if($row['type'] === 'group')
-            <tr class="group-row"><td colspan="5">{{ $row['label'] }}</td></tr>
+            <tr class="group"><td colspan="5">{{ $row['label'] }}</td></tr>
             @else
             <tr>
                 <td>
@@ -354,6 +466,7 @@
     </tbody>
 </table>
 
+{{-- ========== TOTALS ========== --}}
 <table class="totals">
     <tr>
         <td class="words">
@@ -375,27 +488,27 @@
 </table>
 
 @if($document->terms_conditions)
-<div class="notes">{!! nl2br(e($document->terms_conditions)) !!}</div>
+<div class="block">{!! nl2br(e($document->terms_conditions)) !!}</div>
 @endif
 
 @if($document->additional_info)
-<div class="notes"><strong>Additional Info:</strong> {{ $document->additional_info }}</div>
+<div class="block"><strong>Additional Info:</strong> {{ $document->additional_info }}</div>
 @endif
 
 @if(!empty($pay['link']) || !empty($pay['upi']) || !empty($qrFile))
-<div class="pay-box">
+<div class="block">
     <table style="width:100%;border-collapse:collapse;">
         <tr>
             <td style="width:{{ !empty($qrFile) ? '78%' : '100%' }};vertical-align:top;">
                 <div class="ttl">Payment Options</div>
                 @if(!empty($pay['link']))
-                <div class="line"><strong>Pay Online:</strong> {{ $pay['link'] }}</div>
+                <div><strong>Pay Online:</strong> {{ $pay['link'] }}</div>
                 @endif
                 @if(!empty($pay['upi']))
-                <div class="line"><strong>UPI ID:</strong> {{ $pay['upi'] }}</div>
+                <div><strong>UPI ID:</strong> {{ $pay['upi'] }}</div>
                 @endif
                 @if(!empty($qrFile))
-                <div class="line" style="color:#6b7280;">Scan the QR code to pay via any UPI app.</div>
+                <div style="color:#6b7280;">Scan the QR code to pay via any UPI app.</div>
                 @endif
             </td>
             @if(!empty($qrFile))

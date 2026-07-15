@@ -453,10 +453,12 @@
 </div>
 @endif
 
+@if(!empty($showBankDetails))
 <div class="bank">
     <strong>Bank Details:</strong>
     {{ $bank['bank_name'] }} | A/C: {{ $bank['account_number'] }} | IFSC: {{ $bank['ifsc'] }} | UPI: {{ $bank['upi_id'] }}
 </div>
+@endif
 
 @if(!empty($sig))
 <table class="sig">

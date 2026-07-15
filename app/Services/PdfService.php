@@ -281,6 +281,9 @@ class PdfService
             'rows' => $rows,
             'totals' => $totals,
             'bank' => $this->bankDetails($tenant),
+            'showBankDetails' => array_key_exists('show_bank_details', $opts)
+                ? (bool) $opts['show_bank_details']
+                : true,
             'sellerAddress' => $tenant?->address ? rtrim((string) $tenant->address, ',').',' : '',
             'sellerCityLine' => trim(implode(', ', $cityParts)),
             'words' => $document->total_in_words ? strtoupper((string) $document->total_in_words) : '',

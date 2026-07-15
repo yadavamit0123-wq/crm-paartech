@@ -53,6 +53,7 @@ class DocumentSampleSeeder extends Seeder
                 'hide_place_of_supply' => false,
                 'show_tax_summary' => true,
                 'summarise_quantity' => false,
+                'show_bank_details' => true,
                 'show_powered_by_nexpaar' => true,
             ],
             'notes' => 'Thank you for your business!',

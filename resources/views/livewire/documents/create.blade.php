@@ -475,6 +475,7 @@
                     <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.hide_place_of_supply" class="rounded"> Hide place of supply</label>
                     <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.show_tax_summary" class="rounded"> Show tax summary in PDF</label>
                     <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.summarise_quantity" class="rounded"> Show total quantity in PDF</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" wire:model="advanced_options.show_bank_details" class="rounded"> Show bank details on PDF</label>
                     <label class="flex items-center gap-2 md:col-span-2"><input type="checkbox" wire:model="advanced_options.show_powered_by_nexpaar" class="rounded"> Show “Powered by Nexpaar” in PDF footer</label>
                 </div>
             </div>

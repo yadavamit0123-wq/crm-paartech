@@ -5,13 +5,13 @@
     <title>{{ $document->document_number }}</title>
     <style>
         /*
-         * Sample Quotation layout (A4):
-         * Footer MUST sit in bottom page margin (DomPDF fixed) — every page.
+         * Sample Quotation layout (A4).
+         * Footer is stamped via PdfService canvas (DomPDF CSS fixed unreliable).
          */
         @@page {
             size: A4 portrait;
-            /* Bottom margin = footer height + breathing room */
-            margin: 14mm 14mm 32mm 14mm;
+            /* Extra bottom room for canvas-stamped sample footer */
+            margin: 14mm 14mm 30mm 14mm;
         }
 
         * { margin: 0; padding: 0; }
@@ -27,99 +27,6 @@
         .sheet {
             border: 1px solid #9ca3af;
             padding: 14px 14px 12px;
-        }
-
-        /*
-         * SAMPLE FOOTER — har page (DomPDF):
-         * position:fixed + bottom negative = @page margin zone me dikhe
-         * dashed line | No / Date / For | Page X of Y
-         * disclaimer left | Powered by Nexpaar right
-         */
-        .page-footer {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: -28mm;
-            height: 26mm;
-            z-index: 1000;
-        }
-        .page-footer .rule {
-            border-top: 1px dashed #c4c4c4;
-            margin: 0 0 6px 0;
-            height: 0;
-        }
-        .page-footer .meta {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-        .page-footer .meta td {
-            vertical-align: top;
-            padding: 0 8px 0 0;
-        }
-        .page-footer .meta td:last-child {
-            padding-right: 0;
-            text-align: right;
-            width: 18%;
-        }
-        .page-footer .meta td.col-no { width: 22%; }
-        .page-footer .meta td.col-date { width: 24%; }
-        .page-footer .meta td.col-for { width: 36%; }
-        .page-footer .lbl {
-            font-size: 7px;
-            color: #9ca3af;
-            line-height: 1.2;
-            font-weight: normal;
-        }
-        .page-footer .val {
-            font-size: 9px;
-            font-weight: bold;
-            color: #111827;
-            margin-top: 1px;
-            word-wrap: break-word;
-            line-height: 1.25;
-        }
-        .page-footer .pagenum {
-            font-size: 9px;
-            font-weight: bold;
-            color: #111827;
-            padding-top: 9px;
-            text-align: right;
-        }
-        .page-footer .bottom-row {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 5px;
-        }
-        .page-footer .disclaimer {
-            font-size: 6.5px;
-            color: #6b7280;
-            font-style: italic;
-            line-height: 1.3;
-        }
-        .powered {
-            text-align: right;
-            white-space: nowrap;
-        }
-        .powered-label {
-            font-size: 6.5px;
-            color: #1e1b4b;
-            letter-spacing: 0.4px;
-            vertical-align: middle;
-            font-weight: 600;
-        }
-        .powered-mark {
-            width: 16px;
-            height: 16px;
-            vertical-align: middle;
-            margin: 0 3px;
-        }
-        .powered-name {
-            font-size: 10.5px;
-            font-weight: bold;
-            color: #7c3aed;
-            letter-spacing: 0.8px;
-            vertical-align: middle;
         }
 
         /* ========== HEADER ========== */
@@ -345,47 +252,6 @@
     </style>
 </head>
 <body>
-
-{{-- ========== SAMPLE FOOTER — every page (visible in @page bottom margin) ========== --}}
-<div class="page-footer">
-    <div class="rule"></div>
-    <table class="meta">
-        <tr>
-            <td class="col-no">
-                <div class="lbl">{{ $typeLabel }} No</div>
-                <div class="val">{{ $document->document_number }}</div>
-            </td>
-            <td class="col-date">
-                <div class="lbl">{{ $typeLabel }} Date</div>
-                <div class="val">{{ optional($document->issue_date)->format('d M Y') }}</div>
-            </td>
-            <td class="col-for">
-                <div class="lbl">{{ $typeLabel }} For</div>
-                <div class="val">{{ $document->customer_name }}</div>
-            </td>
-            <td>
-                {{-- Page X of Y canvas se stamp hota hai (is slot ke andar) --}}
-                <div class="pagenum">&nbsp;</div>
-            </td>
-        </tr>
-    </table>
-    <table class="bottom-row">
-        <tr>
-            <td style="width:58%;vertical-align:middle;">
-                <div class="disclaimer">This is an electronically generated document, no signature is required.</div>
-            </td>
-            <td style="width:42%;vertical-align:middle;" class="powered">
-                @if(!empty($showPoweredByNexpaar))
-                <span class="powered-label">Powered by</span>
-                @if(!empty($nexpaarMark))
-                <img src="{{ $nexpaarMark }}" class="powered-mark" alt="">
-                @endif
-                <span class="powered-name">Nexpaar</span>
-                @endif
-            </td>
-        </tr>
-    </table>
-</div>
 
 <div class="sheet">
 

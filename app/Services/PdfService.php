@@ -29,8 +29,8 @@ class PdfService
     }
 
     /**
-     * Render + stamp "Page X of Y" in the sample footer (bottom-right).
-     * DomPDF canvas: origin bottom-left, y increases UP — low y = footer.
+     * Render PDF then stamp sample footer on EVERY page via canvas.
+     * (DomPDF CSS position:fixed footer is unreliable / often invisible.)
      */
     public function renderedPdfOutput(Document $document): string
     {
@@ -38,29 +38,86 @@ class PdfService
         $dompdf = $pdf->getDomPDF();
         $dompdf->render();
 
-        $canvas = $dompdf->getCanvas();
-        $fontMetrics = $dompdf->getFontMetrics();
-        $font = $fontMetrics->getFont('DejaVu Sans', 'bold')
-            ?: $fontMetrics->getFont('DejaVu Sans', 'normal');
-
-        if ($canvas && $font) {
-            $width = $canvas->get_width();
-            // ~18mm from bottom — HTML footer meta row ke right column me
-            $yFromBottom = 50;
-            $size = 8;
-            // Approximate right-align (A4 ~595pt; leave ~14mm right margin)
-            $x = $width - 100;
-            $canvas->page_text(
-                $x,
-                $yFromBottom,
-                'Page {PAGE_NUM} of {PAGE_COUNT}',
-                $font,
-                $size,
-                [0.17, 0.24, 0.31]
-            );
-        }
+        $payload = $this->buildViewData($document);
+        $this->stampSampleFooter($dompdf, $payload);
 
         return $dompdf->output();
+    }
+
+    /**
+     * Sample footer on EVERY page via canvas page_text (CSS fixed footer fails in DomPDF).
+     *
+     * DomPDF canvas text Y is top-origin (internally flipped to PDF coords).
+     * Footer = high Y near page height (e.g. ~h-30), NOT small Y.
+     */
+    protected function stampSampleFooter(\Dompdf\Dompdf $dompdf, array $payload): void
+    {
+        $canvas = $dompdf->getCanvas();
+        if (! $canvas) {
+            return;
+        }
+
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans', 'normal');
+        $bold = $fontMetrics->getFont('DejaVu Sans', 'bold') ?: $font;
+        if (! $font) {
+            return;
+        }
+
+        $typeLabel = (string) ($payload['typeLabel'] ?? 'Document');
+        $document = $payload['document'];
+        $no = (string) ($document->document_number ?? '');
+        $date = $document->issue_date ? $document->issue_date->format('d M Y') : '';
+        $for = (string) ($document->customer_name ?? '');
+        $showNexpaar = ! empty($payload['showPoweredByNexpaar']);
+
+        if (mb_strlen($for) > 28) {
+            $for = mb_substr($for, 0, 27).'...';
+        }
+
+        $grey = [0.61, 0.64, 0.69];
+        $dark = [0.07, 0.09, 0.15];
+        $mute = [0.42, 0.45, 0.50];
+        $nexpaarBrand = [0.49, 0.23, 0.93]; // #7c3aed fixed brand
+
+        $w = $canvas->get_width();
+        $h = $canvas->get_height();
+        $left = 40;
+        $right = $w - 40;
+
+        // Distances from bottom of page → convert to DomPDF top-origin Y
+        $y = static fn (float $fromBottom) => $h - $fromBottom;
+
+        // Dashed separator
+        $canvas->page_text($left, $y(72), str_repeat('- ', 58), $font, 6, $grey);
+
+        // Meta labels (above values)
+        $canvas->page_text($left, $y(60), $typeLabel.' No', $font, 6.5, $grey);
+        $canvas->page_text($left + 125, $y(60), $typeLabel.' Date', $font, 6.5, $grey);
+        $canvas->page_text($left + 250, $y(60), $typeLabel.' For', $font, 6.5, $grey);
+
+        // Meta values
+        $canvas->page_text($left, $y(48), $no, $bold, 8, $dark);
+        $canvas->page_text($left + 125, $y(48), $date, $bold, 8, $dark);
+        $canvas->page_text($left + 250, $y(48), $for, $bold, 8, $dark);
+
+        // Page X of Y (right)
+        $canvas->page_text($right - 95, $y(48), 'Page {PAGE_NUM} of {PAGE_COUNT}', $bold, 8, $dark);
+
+        // Disclaimer (left)
+        $canvas->page_text(
+            $left,
+            $y(28),
+            'This is an electronically generated document, no signature is required.',
+            $font,
+            6,
+            $mute
+        );
+
+        // Powered by Nexpaar (right, fixed brand color)
+        if ($showNexpaar) {
+            $canvas->page_text($right - 115, $y(28), 'Powered by Nexpaar', $bold, 8, $nexpaarBrand);
+        }
     }
 
     public function download(Document $document)

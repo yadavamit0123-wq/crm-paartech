@@ -188,7 +188,8 @@ class PdfService
             'currency' => $currency,
             'logoFile' => $this->resolveFile($document->logo_path),
             // Nexpaar mark — fixed brand asset (quotation theme se linked nahi)
-            'nexpaarMark' => $this->resolveFile(public_path('images/nexpaar-mark.png')),
+            'nexpaarMark' => $this->resolveFile(public_path('images/nexpaar-mark-sm.png'))
+                ?: $this->resolveFile(public_path('images/nexpaar-mark.png')),
             'qrFile' => $this->resolveFile($pay['qr_image'] ?? null),
             'sig' => $sig,
             'sigImage' => $this->resolveFile($sig['signature_image'] ?? null),

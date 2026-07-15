@@ -4,9 +4,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $document->document_number }}</title>
     <style>
-        @@page { size: A4 portrait; margin: 16mm 14mm 16mm 14mm; }
+        @@page { size: A4 portrait; margin: 20mm; }
         * { margin: 0; padding: 0; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #1f2937; line-height: 1.45; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 10px;
+            color: #1f2937;
+            line-height: 1.45;
+        }
 
         .top-bar {
             margin-bottom: 12px;

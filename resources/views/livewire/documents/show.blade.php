@@ -94,8 +94,10 @@
             </div>
 
             {{-- Exact PDF preview — bilkul wahi jo download hota hai --}}
-            <div x-show="view === 'pdf'" class="bg-gray-200 dark:bg-gray-900 rounded-xl border dark:border-gray-700 overflow-hidden">
-                <iframe src="{{ route('leads.documents.pdf', $document) }}#toolbar=0&view=FitH" class="w-full" style="height: 78vh; border: 0;" title="PDF Preview"></iframe>
+            <div x-show="view === 'pdf'" class="bg-gray-200 dark:bg-gray-900 rounded-xl border dark:border-gray-700 overflow-hidden p-4 sm:p-6">
+                <div class="mx-auto max-w-4xl bg-white shadow-sm rounded-sm overflow-hidden">
+                    <iframe src="{{ route('leads.documents.pdf', $document) }}#toolbar=0&view=FitH" class="w-full bg-white" style="height: 78vh; border: 0;" title="PDF Preview"></iframe>
+                </div>
             </div>
 
             <div x-show="view === 'details'" x-cloak class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border dark:border-gray-700">

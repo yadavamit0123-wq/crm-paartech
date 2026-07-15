@@ -24,9 +24,11 @@ class PdfService
         $pdf->setPaper('a4', 'portrait');
         $pdf->setOption('isHtml5ParserEnabled', true);
         $pdf->setOption('isPhpEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
         $pdf->setOption('defaultFont', 'DejaVu Sans');
-        $pdf->setOption('dpi', 120);
+        $pdf->setOption('dpi', 96);
         $pdf->setOption('enable_font_subsetting', true);
+        $pdf->setOption('isFontSubsettingEnabled', true);
 
         return $pdf;
     }

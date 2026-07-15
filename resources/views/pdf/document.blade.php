@@ -5,199 +5,263 @@
     <title>{{ $document->document_number }}</title>
     <style>
         @php
-            $themeColor = $document->theme_color ?? '#7c3aed';
+            $themeColor = $document->theme_color ?: '#7c3aed';
             $opts = $document->advanced_options ?? [];
-            $hidePlaceOfSupply = $opts['hide_place_of_supply'] ?? false;
+            $hidePlaceOfSupply = ! empty($opts['hide_place_of_supply']);
             $showTaxSummary = $opts['show_tax_summary'] ?? true;
-            $isGst = $document->is_gst_applicable;
+            $isGst = (bool) $document->is_gst_applicable;
             $typeLabel = $document->typeLabel();
-            $currency = $document->currency === 'USD' ? '$' : '₹';
-            $hasDiscountCol = true;
+            $currency = ($document->currency ?? 'INR') === 'USD' ? '$' : '₹';
+            $money = function ($n, bool $force2 = false) use ($currency) {
+                $n = (float) $n;
+                if ($force2 || abs($n - round($n)) > 0.00001) {
+                    return $currency.number_format($n, 2);
+                }
+
+                return $currency.number_format($n, 0);
+            };
         @endphp
 
         @page {
             size: A4 portrait;
-            margin: 28mm 12mm 20mm 12mm;
+            margin: 30mm 14mm 18mm 14mm;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; }
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10.5px;
+            font-size: 10px;
             color: #1f2937;
-            line-height: 1.55;
-            word-wrap: break-word;
+            line-height: 1.45;
         }
 
-        /* ── Repeating top bar (fixed = every page) ── */
+        /* Repeating header — sample PT00121 style */
         .top-bar {
             position: fixed;
             top: -26mm;
             left: 0;
             right: 0;
-            height: 22mm;
+            height: 24mm;
             border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 6px;
         }
         .top-bar table { width: 100%; border-collapse: collapse; }
-        .top-bar .lbl { font-size: 8px; color: #6b7280; text-transform: capitalize; }
-        .top-bar .val { font-size: 10px; font-weight: bold; color: #111827; margin-top: 2px; word-wrap: break-word; }
-        .top-bar .disclaimer { font-size: 7.5px; color: #6b7280; text-align: right; line-height: 1.35; }
+        .top-bar .lbl {
+            font-size: 8px;
+            color: #9ca3af;
+            line-height: 1.2;
+        }
+        .top-bar .val {
+            font-size: 10px;
+            font-weight: bold;
+            color: #111827;
+            margin-top: 2px;
+            line-height: 1.25;
+            word-wrap: break-word;
+            max-width: 150px;
+        }
+        .top-bar .disc {
+            font-size: 7.5px;
+            color: #9ca3af;
+            text-align: right;
+            line-height: 1.35;
+        }
 
-        /* ── Hero (page 1 only feel) ── */
-        .hero { margin-bottom: 16px; padding-top: 4px; }
+        .hero { padding-top: 2px; margin-bottom: 14px; }
         .hero-title {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: bold;
             color: {{ $themeColor }};
-            letter-spacing: -0.5px;
-            margin-bottom: 2px;
+            letter-spacing: -0.6px;
+            line-height: 1.1;
+            margin-bottom: 4px;
         }
         .hero-project {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
             color: {{ $themeColor }};
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            line-height: 1.3;
         }
-        .hero-meta table { width: 100%; }
-        .hero-meta td { font-size: 10px; padding: 2px 0; vertical-align: top; }
-        .hero-meta .label { color: #6b7280; width: 110px; }
-        .hero-meta .value { color: #111827; font-weight: bold; }
+        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        .meta-table td { font-size: 10px; padding: 2px 0; vertical-align: top; }
+        .meta-label { color: #6b7280; width: 120px; }
+        .meta-value { color: #111827; font-weight: bold; }
 
-        /* ── From / For ── */
-        .parties { width: 100%; margin-bottom: 16px; border-collapse: separate; border-spacing: 10px 0; }
-        .party-box {
-            width: 48%;
-            vertical-align: top;
-            padding: 0;
-        }
+        .parties { width: 100%; border-collapse: collapse; margin: 14px 0 18px; }
+        .parties td { width: 48%; vertical-align: top; }
+        .parties .gap { width: 4%; }
         .party-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
             color: {{ $themeColor }};
             margin-bottom: 8px;
         }
-        .party-name { font-size: 11.5px; font-weight: bold; color: #111827; margin-bottom: 4px; }
-        .party-line { font-size: 9.5px; color: #374151; line-height: 1.6; word-wrap: break-word; }
+        .party-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        .party-line {
+            font-size: 9.5px;
+            color: #374151;
+            line-height: 1.55;
+            word-wrap: break-word;
+        }
 
-        /* ── Items table ── */
-        .items-table {
+        .items {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            margin-bottom: 0;
         }
-        .items-table thead { display: table-header-group; }
-        .items-table th {
-            background: {{ $themeColor }};
+        .items thead { display: table-header-group; }
+        .items th {
+            background-color: {{ $themeColor }};
             color: #ffffff;
             font-size: 9px;
             font-weight: bold;
-            padding: 9px 7px;
+            padding: 9px 8px;
             text-align: left;
             border: none;
         }
-        .items-table th.right { text-align: right; }
-        .items-table td {
-            padding: 10px 7px;
+        .items th.r { text-align: right; }
+        .items td {
+            padding: 10px 8px;
+            vertical-align: top;
             border-bottom: 1px solid #f3f4f6;
-            vertical-align: top;
-            font-size: 9.5px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        .items-table tbody tr { page-break-inside: avoid; }
-        .item-num { font-weight: bold; color: #111827; font-size: 10.5px; }
-        .item-name { font-weight: bold; color: #111827; font-size: 10.5px; line-height: 1.45; }
-        .item-body { font-size: 9px; color: #374151; margin-top: 6px; line-height: 1.5; }
-        .item-body ul { margin: 4px 0 4px 14px; padding: 0; }
-        .item-body li { margin-bottom: 2px; }
-        .item-body p { margin-bottom: 3px; }
-        .group-label {
-            font-size: 9px;
-            font-weight: bold;
-            color: {{ $themeColor }};
-            padding: 6px 0 4px;
-            border-bottom: 1px dashed #e5e7eb;
-            margin-bottom: 4px;
-        }
-        .col-item { width: 52%; }
-        .col-qty { width: 10%; }
-        .col-rate { width: 12%; }
-        .col-disc { width: 12%; }
-        .col-amt { width: 14%; }
-
-        /* ── Totals block (last page) ── */
-        .totals-wrap {
-            page-break-inside: avoid;
-            margin-top: 12px;
-            width: 100%;
-        }
-        .totals-wrap table { width: 100%; border-collapse: collapse; }
-        .words-cell {
-            vertical-align: top;
-            width: 55%;
-            padding-right: 16px;
             font-size: 9.5px;
             color: #374151;
             word-wrap: break-word;
+            overflow-wrap: anywhere;
         }
-        .words-cell strong { color: #111827; }
-        .nums-cell { vertical-align: top; width: 45%; }
+        .items td.r { text-align: right; white-space: nowrap; }
+        /* Long feature lists must flow across pages like sample — do NOT avoid breaks on rows */
+        .items tbody tr { page-break-inside: auto; }
+        .item-title {
+            font-size: 10.5px;
+            font-weight: bold;
+            color: #111827;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+        .item-body {
+            font-size: 9px;
+            color: #4b5563;
+            line-height: 1.5;
+            margin-top: 4px;
+        }
+        .item-body ul, .item-body ol { margin: 4px 0 4px 16px; padding: 0; }
+        .item-body li { margin: 0 0 3px; }
+        .item-body p { margin: 0 0 4px; }
+        .hsn {
+            font-size: 8px;
+            color: #9ca3af;
+            margin-top: 5px;
+        }
+        .group {
+            font-size: 10px;
+            font-weight: bold;
+            color: {{ $themeColor }};
+            padding: 8px 0 4px;
+            border-bottom: 1px dashed #e5e7eb;
+            margin-bottom: 2px;
+        }
+
+        .w-item { width: 48%; }
+        .w-qty { width: 12%; }
+        .w-rate { width: 13%; }
+        .w-disc { width: 13%; }
+        .w-amt { width: 14%; }
+
+        .totals {
+            width: 100%;
+            margin-top: 16px;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+        }
+        .totals .words {
+            width: 52%;
+            vertical-align: top;
+            padding-right: 18px;
+            font-size: 10px;
+            color: #111827;
+            line-height: 1.45;
+        }
+        .totals .nums { width: 48%; vertical-align: top; }
         .nums-table { width: 100%; border-collapse: collapse; }
         .nums-table td {
-            padding: 6px 8px;
-            font-size: 9.5px;
+            padding: 5px 6px;
+            font-size: 10px;
             border-bottom: 1px solid #f3f4f6;
         }
         .nums-table td:first-child { color: #6b7280; text-align: left; }
-        .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; }
-        .nums-table .total-row td {
-            font-size: 12px;
+        .nums-table td:last-child { text-align: right; font-weight: 600; color: #111827; white-space: nowrap; }
+        .nums-table .disc td { color: #dc2626; }
+        .nums-table .grand td {
+            font-size: 13px;
             font-weight: bold;
             color: {{ $themeColor }};
             border-top: 2px solid {{ $themeColor }};
             border-bottom: none;
-            padding-top: 8px;
+            padding-top: 9px;
         }
-        .nums-table .discount-row td { color: #dc2626; }
 
-        /* ── Footer notes ── */
-        .footer-notes {
-            margin-top: 14px;
-            font-size: 9px;
+        .notes {
+            margin-top: 16px;
+            font-size: 9.5px;
             color: #374151;
             line-height: 1.6;
-            page-break-inside: avoid;
             word-wrap: break-word;
         }
-        .bank-strip {
+
+        .pay-box {
+            margin-top: 14px;
+            border: 1px solid #e5e7eb;
+            padding: 10px 12px;
+            page-break-inside: avoid;
+        }
+        .pay-box .ttl {
+            font-size: 10px;
+            font-weight: bold;
+            color: {{ $themeColor }};
+            margin-bottom: 6px;
+        }
+        .pay-box .line {
+            font-size: 9px;
+            color: #374151;
+            margin-bottom: 3px;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .bank {
             margin-top: 12px;
-            padding: 9px 10px;
+            padding: 9px 11px;
             background: #f9fafb;
             border-left: 3px solid {{ $themeColor }};
             font-size: 9px;
+            color: #374151;
+            line-height: 1.5;
             page-break-inside: avoid;
             word-wrap: break-word;
         }
-        .payment-strip {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 4px;
+
+        .sig {
+            margin-top: 22px;
+            width: 100%;
+            border-collapse: collapse;
             page-break-inside: avoid;
         }
-        .payment-strip table { width: 100%; border-collapse: collapse; }
-        .payment-strip td { vertical-align: top; font-size: 9px; color: #374151; padding: 0 6px; }
-        .payment-strip .pay-title { font-size: 9.5px; font-weight: bold; color: {{ $themeColor }}; margin-bottom: 4px; }
-        .signature-block {
-            margin-top: 20px;
-            page-break-inside: avoid;
+        .sig .line {
+            border-top: 1px solid #d1d5db;
+            padding-top: 6px;
+            min-width: 150px;
+            display: inline-block;
+            text-align: center;
         }
-        .computer-note {
-            margin-top: 16px;
+        .foot {
+            margin-top: 18px;
             padding-top: 8px;
             border-top: 1px solid #e5e7eb;
             font-size: 8px;
@@ -209,316 +273,316 @@
 </head>
 <body>
 
-    {{-- ═══ REPEATING HEADER (every page) ═══ --}}
-    <div class="top-bar">
-        <table>
-            <tr>
-                <td style="width:22%; vertical-align:top;">
-                    <div class="lbl">{{ $typeLabel }} No</div>
-                    <div class="val">{{ $document->document_number }}</div>
-                </td>
-                <td style="width:22%; vertical-align:top;">
-                    <div class="lbl">{{ $typeLabel }} Date</div>
-                    <div class="val">{{ $document->issue_date->format('d M Y') }}</div>
-                </td>
-                <td style="width:28%; vertical-align:top;">
-                    <div class="lbl">{{ $typeLabel }} For</div>
-                    <div class="val">{{ $document->customer_name }}</div>
-                </td>
-                <td style="width:28%; vertical-align:top;" class="disclaimer">
-                    <span class="page-number"></span><br>
-                    This is an electronically generated document,<br>no signature is required.
-                </td>
-            </tr>
-        </table>
-    </div>
+@php
+    $resolveFile = function (?string $path) {
+        if (! $path) {
+            return null;
+        }
+        foreach ([public_path('storage/'.$path), storage_path('app/public/'.$path)] as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
 
-    {{-- ═══ HERO TITLE ═══ --}}
-    <div class="hero">
-        <div class="hero-title">{{ $typeLabel }}</div>
-        @if($document->title)
-        <div class="hero-project">{{ $document->title }}</div>
-        @endif
-        <div class="hero-meta">
-            <table>
-                <tr>
-                    <td class="label">{{ $typeLabel }} No #</td>
-                    <td class="value">{{ $document->document_number }}</td>
-                    <td style="width:30px;"></td>
-                    <td class="label">{{ $typeLabel }} Date</td>
-                    <td class="value">{{ $document->issue_date->format('M d, Y') }}</td>
-                </tr>
-                @if($document->due_date || $document->valid_until)
-                <tr>
-                    @if($document->due_date)
-                    <td class="label">Due Date</td>
-                    <td class="value">{{ $document->due_date->format('M d, Y') }}</td>
-                    <td></td>
-                    @else
-                    <td></td><td></td><td></td>
-                    @endif
-                    @if($document->valid_until)
-                    <td class="label">Valid Until</td>
-                    <td class="value">{{ $document->valid_until->format('M d, Y') }}</td>
-                    @else
-                    <td></td><td></td>
-                    @endif
-                </tr>
-                @endif
-            </table>
-        </div>
-    </div>
+        return null;
+    };
+    $logoFile = $resolveFile($document->logo_path);
+    $pay = is_array($document->payment_options ?? null) ? $document->payment_options : [];
+    $qrFile = $resolveFile($pay['qr_image'] ?? null);
+    $sig = is_array($document->signature_data ?? null) ? $document->signature_data : [];
+    $sigImage = $resolveFile($sig['signature_image'] ?? null);
+    $stampImage = $resolveFile($sig['stamp_image'] ?? null);
+@endphp
 
-    {{-- ═══ FROM / FOR ═══ --}}
-    <table class="parties">
+{{-- Repeating header (every page) — matches sample --}}
+<div class="top-bar">
+    <table>
         <tr>
-            <td class="party-box">
-                <div class="party-title">{{ $typeLabel }} From</div>
-                @php
-                    // storage:link missing hone par bhi logo dikhe — direct storage path fallback
-                    $logoFile = null;
-                    if ($document->logo_path) {
-                        foreach ([public_path('storage/'.$document->logo_path), storage_path('app/public/'.$document->logo_path)] as $candidate) {
-                            if (file_exists($candidate)) { $logoFile = $candidate; break; }
-                        }
-                    }
-                @endphp
-                @if($logoFile)
-                <img src="{{ $logoFile }}" style="max-height:44px;max-width:120px;margin-bottom:6px;" alt="">
-                @endif
-                <div class="party-name">{{ $tenant->name }}</div>
-                <div class="party-line">
-                    @if($tenant->address){{ $tenant->address }},<br>@endif
-                    @if($tenant->city || $tenant->state)
-                    {{ trim(implode(', ', array_filter([$tenant->city, $tenant->state]))) }}@if($tenant->pincode), India - {{ $tenant->pincode }}@endif<br>
-                    @endif
-                    @if($tenant->email)Email: {{ $tenant->email }}<br>@endif
-                    @if($tenant->phone)Phone: {{ $tenant->phone }}@endif
-                    @if($tenant->gstin && $isGst)<br>GSTIN: {{ $tenant->gstin }}@endif
-                </div>
+            <td style="width:22%; vertical-align:top;">
+                <div class="lbl">{{ $typeLabel }} No</div>
+                <div class="val">{{ $document->document_number }}</div>
             </td>
-            <td style="width:4%;"></td>
-            <td class="party-box">
-                <div class="party-title">{{ $typeLabel }} For</div>
-                <div class="party-name">{{ $document->customer_name }}</div>
-                <div class="party-line">
-                    @if($document->customer_address){{ $document->customer_address }}<br>@endif
-                    @if($document->customer_state){{ $document->customer_state }}@if($document->customer_gstin && $isGst), @endif @endif
-                    @if($document->customer_gstin && $isGst)GSTIN: {{ $document->customer_gstin }}<br>@endif
-                    @if($document->customer_email)Email: {{ $document->customer_email }}<br>@endif
-                    @if($document->customer_phone)Phone: {{ $document->customer_phone }}@endif
-                </div>
+            <td style="width:22%; vertical-align:top;">
+                <div class="lbl">{{ $typeLabel }} Date</div>
+                <div class="val">{{ $document->issue_date->format('d M Y') }}</div>
+            </td>
+            <td style="width:28%; vertical-align:top;">
+                <div class="lbl">{{ $typeLabel }} For</div>
+                <div class="val">{{ $document->customer_name }}</div>
+            </td>
+            <td style="width:28%; vertical-align:top;" class="disc">
+                <span style="font-size:8px;color:#6b7280;">&nbsp;</span><br>
+                This is an electronically generated document,<br>no signature is required.
             </td>
         </tr>
     </table>
+</div>
 
-    {{-- ═══ LINE ITEMS ═══ --}}
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th class="col-item">Item</th>
-                <th class="col-qty right">Quantity</th>
-                <th class="col-rate right">Rate</th>
-                @if($hasDiscountCol)<th class="col-disc right">Discount</th>@endif
-                <th class="col-amt right">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php $prevGroup = ''; $rowNum = 0; @endphp
-            @foreach($items as $item)
+{{-- Hero --}}
+<div class="hero">
+    <div class="hero-title">{{ $typeLabel }}</div>
+    @if($document->title)
+    <div class="hero-project">{{ $document->title }}</div>
+    @endif
+    <table class="meta-table">
+        <tr>
+            <td class="meta-label">{{ $typeLabel }} No #</td>
+            <td class="meta-value">{{ $document->document_number }}</td>
+            <td style="width:24px;"></td>
+            <td class="meta-label">{{ $typeLabel }} Date</td>
+            <td class="meta-value">{{ $document->issue_date->format('M d, Y') }}</td>
+        </tr>
+        @if($document->due_date || $document->valid_until)
+        <tr>
+            @if($document->due_date)
+            <td class="meta-label">Due Date</td>
+            <td class="meta-value">{{ $document->due_date->format('M d, Y') }}</td>
+            <td></td>
+            @else
+            <td></td><td></td><td></td>
+            @endif
+            @if($document->valid_until)
+            <td class="meta-label">Valid Until</td>
+            <td class="meta-value">{{ $document->valid_until->format('M d, Y') }}</td>
+            @else
+            <td></td><td></td>
+            @endif
+        </tr>
+        @endif
+    </table>
+</div>
+
+{{-- From / For --}}
+<table class="parties">
+    <tr>
+        <td>
+            <div class="party-title">{{ $typeLabel }} From</div>
+            @if($logoFile)
+            <img src="{{ $logoFile }}" style="max-height:42px;max-width:130px;margin-bottom:6px;" alt="">
+            @endif
+            <div class="party-name">{{ $tenant->name }}</div>
+            <div class="party-line">
+                @if($tenant->address){{ rtrim($tenant->address, ',').',' }}<br>@endif
+                @php
+                    $cityLine = trim(implode(', ', array_filter([
+                        $tenant->city,
+                        $tenant->state,
+                        ($tenant->country ?: 'India').($tenant->pincode ? ' - '.$tenant->pincode : ''),
+                    ])));
+                @endphp
+                @if($cityLine){{ $cityLine }}<br>@endif
+                @if($tenant->email)Email: {{ $tenant->email }}<br>@endif
+                @if($tenant->phone)Phone: {{ $tenant->phone }}@endif
+                @if($isGst && $tenant->gstin)<br>GSTIN: {{ $tenant->gstin }}@endif
+            </div>
+        </td>
+        <td class="gap"></td>
+        <td>
+            <div class="party-title">{{ $typeLabel }} For</div>
+            <div class="party-name">{{ $document->customer_name }}</div>
+            <div class="party-line">
+                @if($document->customer_address){{ $document->customer_address }}<br>@endif
+                @if($document->customer_state){{ $document->customer_state }}@endif
+                @if($isGst && $document->customer_gstin)@if($document->customer_state), @endifGSTIN: {{ $document->customer_gstin }}@endif
+                @if($document->customer_state || ($isGst && $document->customer_gstin))<br>@endif
+                @if($document->customer_email)Email: {{ $document->customer_email }}<br>@endif
+                @if($document->customer_phone)Phone: {{ $document->customer_phone }}@endif
+            </div>
+        </td>
+    </tr>
+</table>
+
+{{-- Items (header repeats every page) --}}
+<table class="items">
+    <thead>
+        <tr>
+            <th class="w-item">Item</th>
+            <th class="w-qty r">Quantity</th>
+            <th class="w-rate r">Rate</th>
+            <th class="w-disc r">Discount</th>
+            <th class="w-amt r">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        @php $prevGroup = ''; $rowNum = 0; @endphp
+        @foreach($items as $item)
             @if($item->group_name && $item->group_name !== $prevGroup)
             <tr>
-                <td colspan="{{ $hasDiscountCol ? 5 : 4 }}">
-                    <div class="group-label">{{ $item->group_name }}</div>
-                </td>
+                <td colspan="5"><div class="group">{{ $item->group_name }}</div></td>
             </tr>
             @php $prevGroup = $item->group_name; @endphp
             @endif
             @php
                 $rowNum++;
-                $gross = $item->quantity * $item->rate;
-                $disc = $item->discount_amount > 0 ? $item->discount_amount : 0;
+                $disc = (float) ($item->discount_amount ?? 0);
+                $discType = $item->discount_type ?? 'fixed';
             @endphp
             <tr>
                 <td>
-                    <div class="item-name">{{ $rowNum }}. {{ $item->description }}</div>
+                    <div class="item-title">{{ $rowNum }}. {{ $item->description }}</div>
                     @if($item->long_description)
                     <div class="item-body">{!! strip_tags($item->long_description, '<br><b><strong><i><em><ul><ol><li><p>') !!}</div>
                     @endif
                     @if($isGst && $item->hsn_sac)
-                    <div style="font-size:8px;color:#6b7280;margin-top:4px;">HSN/SAC: {{ $item->hsn_sac }}@if($showTaxSummary && $item->gst_rate) | GST {{ $item->gst_rate }}%@endif</div>
+                    <div class="hsn">HSN/SAC: {{ $item->hsn_sac }}@if($showTaxSummary && $item->gst_rate) | GST {{ rtrim(rtrim(number_format((float) $item->gst_rate, 2), '0'), '.') }}%@endif</div>
                     @endif
                 </td>
-                <td class="right" style="vertical-align:top;padding-top:12px;">
-                    {{ number_format($item->quantity, 0) == $item->quantity ? number_format($item->quantity, 0) : number_format($item->quantity, 2) }}
-                    @if($item->unit && $item->unit !== 'Nos')<br><span style="font-size:8px;color:#6b7280;">{{ $item->unit }}</span>@endif
+                <td class="r">
+                    {{ abs($item->quantity - round($item->quantity)) < 0.00001 ? number_format($item->quantity, 0) : number_format($item->quantity, 2) }}
+                    @if($item->unit && $item->unit !== 'Nos')
+                    <br><span style="font-size:7.5px;color:#9ca3af;">{{ $item->unit }}</span>
+                    @endif
                 </td>
-                <td class="right" style="vertical-align:top;padding-top:12px;">{{ $currency }}{{ number_format($item->rate, 0) == $item->rate ? number_format($item->rate, 0) : number_format($item->rate, 2) }}</td>
-                @if($hasDiscountCol)
-                <td class="right" style="vertical-align:top;padding-top:12px;">
-                    @if(($item->discount_type ?? 'fixed') === 'percent')
-                        {{ number_format($item->discount_percent, 0) == $item->discount_percent ? number_format($item->discount_percent, 0) : number_format($item->discount_percent, 2) }}%
+                <td class="r">{{ $money($item->rate) }}</td>
+                <td class="r">
+                    @if($discType === 'percent' && (float) $item->discount_percent > 0)
+                        {{ abs($item->discount_percent - round($item->discount_percent)) < 0.00001 ? number_format($item->discount_percent, 0) : number_format($item->discount_percent, 2) }}%
                     @elseif($disc > 0)
-                        {{ $currency }}{{ number_format($disc, 0) == $disc ? number_format($disc, 0) : number_format($disc, 2) }}
+                        {{ $money($disc) }}
                     @else
-                        {{ $currency }}0
+                        {{ $money(0) }}
                     @endif
                 </td>
+                <td class="r" style="font-weight:bold;color:#111827;">{{ $money($item->line_total, true) }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+
+{{-- Totals — sample layout: words left, figures right --}}
+<table class="totals">
+    <tr>
+        <td class="words">
+            @if($document->total_in_words)
+            <strong>Total (in words) :</strong> {{ strtoupper($document->total_in_words) }}
+            @endif
+        </td>
+        <td class="nums">
+            <table class="nums-table">
+                <tr>
+                    <td>Sub Total</td>
+                    <td>{{ $money($document->subtotal, true) }}</td>
+                </tr>
+                @if((float) $document->discount_amount > 0)
+                <tr class="disc">
+                    <td>Discount</td>
+                    <td>({{ $money($document->discount_amount, true) }})</td>
+                </tr>
                 @endif
-                <td class="right" style="vertical-align:top;padding-top:12px;font-weight:bold;">{{ $currency }}{{ number_format($item->line_total, 2) }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    {{-- ═══ TOTALS (reference style: words left, numbers right) ═══ --}}
-    <div class="totals-wrap">
-        <table>
-            <tr>
-                <td class="words-cell">
-                    @if($document->total_in_words)
-                    <strong>Total (in words):</strong> {{ strtoupper($document->total_in_words) }}
+                <tr>
+                    <td>Discounts</td>
+                    <td>{{ $money(0, true) }}</td>
+                </tr>
+                <tr>
+                    <td>Reductions</td>
+                    <td>{{ $money(0, true) }}</td>
+                </tr>
+                @if($isGst && $showTaxSummary && (float) $document->total_tax > 0)
+                <tr>
+                    <td>Tax (GST)</td>
+                    <td>{{ $money($document->total_tax, true) }}</td>
+                </tr>
+                @endif
+                @if(! $hidePlaceOfSupply && $document->place_of_supply)
+                <tr>
+                    <td>Place of Supply</td>
+                    <td>{{ $document->place_of_supply }}</td>
+                </tr>
+                @endif
+                <tr class="grand">
+                    <td>Total ({{ $document->currency ?? 'INR' }})</td>
+                    <td>{{ $money($document->grand_total, true) }}</td>
+                </tr>
+                @if($document->exchange_rate && (float) $document->exchange_rate > 0)
+                    @if(($document->currency ?? 'INR') === 'USD')
+                    <tr><td>INR Equivalent</td><td>₹ {{ number_format($document->grand_total * $document->exchange_rate, 2) }}</td></tr>
+                    @else
+                    <tr><td>USD Equivalent</td><td>$ {{ number_format($document->grand_total / $document->exchange_rate, 2) }}</td></tr>
                     @endif
-                </td>
-                <td class="nums-cell">
-                    <table class="nums-table">
-                        <tr><td>Sub Total</td><td>{{ $currency }}{{ number_format($document->subtotal, 2) }}</td></tr>
-                        @if($document->discount_amount > 0)
-                        <tr class="discount-row"><td>Discount</td><td>({{ $currency }}{{ number_format($document->discount_amount, 2) }})</td></tr>
-                        @endif
-                        @if($isGst && $showTaxSummary && $document->total_tax > 0)
-                        <tr><td>Tax (GST)</td><td>{{ $currency }}{{ number_format($document->total_tax, 2) }}</td></tr>
-                        @endif
-                        @if(!$hidePlaceOfSupply && $document->place_of_supply)
-                        <tr><td>Place of Supply</td><td>{{ $document->place_of_supply }}</td></tr>
-                        @endif
-                        <tr class="total-row">
-                            <td>Total ({{ $document->currency ?? 'INR' }})</td>
-                            <td>{{ $currency }}{{ number_format($document->grand_total, 2) }}</td>
-                        </tr>
-                        @if($document->exchange_rate && $document->exchange_rate > 0)
-                        @if($document->currency === 'USD')
-                        <tr><td>INR Equivalent</td><td>₹ {{ number_format($document->grand_total * $document->exchange_rate, 2) }}</td></tr>
-                        @else
-                        <tr><td>USD Equivalent</td><td>$ {{ number_format($document->grand_total / $document->exchange_rate, 2) }}</td></tr>
-                        @endif
-                        @endif
-                    </table>
-                </td>
-            </tr>
-        </table>
-    </div>
+                @endif
+            </table>
+        </td>
+    </tr>
+</table>
 
-    {{-- Terms & Notes --}}
-    @if($document->terms_conditions)
-    <div class="footer-notes">
-        {!! nl2br(e($document->terms_conditions)) !!}
-    </div>
-    @endif
+@if($document->terms_conditions)
+<div class="notes">{!! nl2br(e($document->terms_conditions)) !!}</div>
+@endif
 
-    @if($document->additional_info)
-    <div class="footer-notes" style="margin-top:8px;">
-        <strong>Additional Info:</strong> {{ $document->additional_info }}
-    </div>
-    @endif
+@if($document->additional_info)
+<div class="notes"><strong>Additional Info:</strong> {{ $document->additional_info }}</div>
+@endif
 
-    {{-- ═══ PAYMENT OPTIONS ═══ --}}
-    @php
-        $pay = $document->payment_options ?? [];
-        $resolveFile = function (?string $path) {
-            if (! $path) { return null; }
-            foreach ([public_path('storage/'.$path), storage_path('app/public/'.$path)] as $candidate) {
-                if (file_exists($candidate)) { return $candidate; }
-            }
-            return null;
-        };
-        $qrFile = $resolveFile($pay['qr_image'] ?? null);
-    @endphp
-    @if(!empty($pay['link']) || !empty($pay['upi']) || $qrFile)
-    <div class="payment-strip">
-        <table>
-            <tr>
-                <td style="width:{{ $qrFile ? '75%' : '100%' }};">
-                    <div class="pay-title">Payment Options</div>
-                    @if(!empty($pay['link']))
-                    <div style="margin-bottom:3px;"><strong>Pay Online:</strong> <a href="{{ $pay['link'] }}" style="color:{{ $themeColor }};text-decoration:none;">{{ $pay['link'] }}</a></div>
-                    @endif
-                    @if(!empty($pay['upi']))
-                    <div style="margin-bottom:3px;"><strong>UPI ID:</strong> {{ $pay['upi'] }}</div>
-                    @endif
-                    @if($qrFile)
-                    <div style="color:#6b7280;">Scan the QR code to pay instantly via any UPI app.</div>
-                    @endif
-                </td>
+@if(! empty($pay['link']) || ! empty($pay['upi']) || $qrFile)
+<div class="pay-box">
+    <table style="width:100%;border-collapse:collapse;">
+        <tr>
+            <td style="width:{{ $qrFile ? '78%' : '100%' }};vertical-align:top;">
+                <div class="ttl">Payment Options</div>
+                @if(! empty($pay['link']))
+                <div class="line"><strong>Pay Online:</strong> {{ $pay['link'] }}</div>
+                @endif
+                @if(! empty($pay['upi']))
+                <div class="line"><strong>UPI ID:</strong> {{ $pay['upi'] }}</div>
+                @endif
                 @if($qrFile)
-                <td style="width:25%;text-align:right;">
-                    <img src="{{ $qrFile }}" style="width:70px;height:70px;object-fit:contain;" alt="Payment QR">
-                </td>
+                <div class="line" style="color:#6b7280;">Scan the QR code to pay via any UPI app.</div>
                 @endif
-            </tr>
-        </table>
-    </div>
-    @endif
+            </td>
+            @if($qrFile)
+            <td style="width:22%;text-align:right;vertical-align:middle;">
+                <img src="{{ $qrFile }}" style="width:72px;height:72px;" alt="QR">
+            </td>
+            @endif
+        </tr>
+    </table>
+</div>
+@endif
 
-    <div class="bank-strip">
-        <strong>Bank Details:</strong>
-        {{ $bank['bank_name'] }} | A/C: {{ $bank['account_number'] }} | IFSC: {{ $bank['ifsc'] }} | UPI: {{ $bank['upi_id'] }}
-    </div>
+<div class="bank">
+    <strong>Bank Details:</strong>
+    {{ $bank['bank_name'] }} &nbsp;|&nbsp; A/C: {{ $bank['account_number'] }} &nbsp;|&nbsp; IFSC: {{ $bank['ifsc'] }} &nbsp;|&nbsp; UPI: {{ $bank['upi_id'] }}
+</div>
 
-    {{-- ═══ SIGNATURE + STAMP ═══ --}}
-    @php
-        $sig = $document->signature_data ?? [];
-        $sigImage = $resolveFile($sig['signature_image'] ?? null);
-        $stampImage = $resolveFile($sig['stamp_image'] ?? null);
-    @endphp
-    @if($sig)
-    <div class="signature-block">
-        <table style="width:100%;border-collapse:collapse;">
-            <tr>
-                <td style="width:60%;"></td>
-                @if($stampImage)
-                <td style="width:18%;text-align:center;vertical-align:bottom;">
-                    <img src="{{ $stampImage }}" style="max-height:64px;max-width:80px;opacity:0.9;" alt="Stamp">
-                </td>
+@if(! empty($sig))
+<table class="sig">
+    <tr>
+        <td style="width:58%;"></td>
+        @if($stampImage)
+        <td style="width:18%;text-align:center;vertical-align:bottom;">
+            <img src="{{ $stampImage }}" style="max-height:60px;max-width:78px;" alt="">
+        </td>
+        @endif
+        <td style="width:{{ $stampImage ? '24%' : '42%' }};text-align:right;vertical-align:bottom;">
+            <div style="display:inline-block;text-align:center;">
+                @if($sigImage)
+                <img src="{{ $sigImage }}" style="max-height:38px;max-width:140px;margin-bottom:4px;" alt=""><br>
+                @else
+                <div style="height:28px;"></div>
                 @endif
-                <td style="width:22%;text-align:right;vertical-align:bottom;">
-                    <div style="display:inline-block;text-align:center;min-width:150px;">
-                        @if($sigImage)
-                        <img src="{{ $sigImage }}" style="max-height:40px;max-width:140px;margin-bottom:4px;" alt="Signature"><br>
-                        @else
-                        <div style="height:34px;"></div>
-                        @endif
-                        <div style="border-top:1px solid #d1d5db;padding-top:5px;">
-                            <strong style="font-size:9.5px;">{{ $sig['name'] ?? '' }}</strong><br>
-                            <span style="font-size:8.5px;color:#6b7280;">{{ $sig['title'] ?? 'Authorised Signatory' }}</span>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-    @endif
+                <div class="line">
+                    <strong style="font-size:10px;color:#111827;">{{ $sig['name'] ?? '' }}</strong><br>
+                    <span style="font-size:8.5px;color:#6b7280;">{{ $sig['title'] ?? 'Authorised Signatory' }}</span>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+@endif
 
-    {{-- ═══ COMPUTER GENERATED NOTE (footer) ═══ --}}
-    <div class="computer-note">
-        This is a computer generated {{ strtolower($typeLabel) }} and does not require a physical signature or stamp.
-    </div>
+<div class="foot">
+    This is a computer generated {{ strtolower($typeLabel) }} and does not require a physical signature or stamp.
+</div>
 
-    {{-- Page numbers --}}
-    <script type="text/php">
-        if (isset($pdf)) {
-            $font = $fontMetrics->getFont('DejaVu Sans', 'normal');
-            $fontBold = $fontMetrics->getFont('DejaVu Sans', 'bold');
-            $size = 7;
-            $color = array(0.55, 0.55, 0.55);
-
-            $pdf->page_script('
-                $font = $fontMetrics->getFont("DejaVu Sans", "normal");
-                $text = "Page " . $PAGE_NUM . " of " . $PAGE_COUNT;
-                $pdf->text(480, 42, $text, $font, 7, array(0.45, 0.45, 0.45));
-            ');
-        }
-    </script>
+<script type="text/php">
+    if (isset($pdf)) {
+        $pdf->page_script('
+            $font = $fontMetrics->getFont("DejaVu Sans", "normal");
+            $text = "Page " . $PAGE_NUM . " of " . $PAGE_COUNT;
+            $pdf->text(478, 38, $text, $font, 7.5, array(0.42, 0.45, 0.50));
+        ');
+    }
+</script>
 
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 return [
     'classic_purple' => [
-        'name' => 'Classic Purple',
+        'name' => 'Paar Classic (Sample match)',
         'color' => '#7c3aed',
         'accent' => '#a78bfa',
         'style' => 'solid',

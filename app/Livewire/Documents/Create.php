@@ -398,6 +398,17 @@ class Create extends Component
         $this->signature_image_path = null;
     }
 
+    public function updatedShowSignature($value): void
+    {
+        // Checkbox off → save pe signature_data null hoga; UI fields bhi clear
+        if (! $value) {
+            $this->signature_name = '';
+            $this->signature_title = '';
+            $this->signatureUpload = null;
+            $this->stampUpload = null;
+        }
+    }
+
     public function updatedStampUpload(): void
     {
         if (! $this->stampUpload) {

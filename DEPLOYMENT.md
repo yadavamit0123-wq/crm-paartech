@@ -57,9 +57,9 @@ DB_DATABASE=username_crm
 DB_USERNAME=username_crmuser
 DB_PASSWORD=your_db_password
 
-SESSION_DRIVER=database
+SESSION_DRIVER=file
 QUEUE_CONNECTION=database
-CACHE_STORE=database
+CACHE_STORE=file
 ```
 
 ---

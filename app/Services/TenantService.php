@@ -32,16 +32,20 @@ class TenantService
             return null;
         }
 
-        if (str_ends_with($host, '.'.$platformDomain)) {
-            $subdomain = str_replace('.'.$platformDomain, '', $host);
+        try {
+            if (str_ends_with($host, '.'.$platformDomain)) {
+                $subdomain = str_replace('.'.$platformDomain, '', $host);
 
-            return Cache::remember("tenant:subdomain:{$subdomain}", 3600, function () use ($subdomain) {
-                return Tenant::where('subdomain', $subdomain)->where('is_active', true)->first();
+                return Cache::remember("tenant:subdomain:{$subdomain}", 3600, function () use ($subdomain) {
+                    return Tenant::where('subdomain', $subdomain)->where('is_active', true)->first();
+                });
+            }
+
+            return Cache::remember("tenant:domain:{$host}", 3600, function () use ($host) {
+                return Tenant::where('custom_domain', $host)->where('is_active', true)->first();
             });
+        } catch (\Throwable) {
+            return null;
         }
-
-        return Cache::remember("tenant:domain:{$host}", 3600, function () use ($host) {
-            return Tenant::where('custom_domain', $host)->where('is_active', true)->first();
-        });
     }
 }

@@ -8,7 +8,7 @@
         </div>
         <div class="flex flex-wrap gap-2">
             <button wire:click="$refresh" class="px-3 py-2 border rounded-lg text-sm">🔄 Refresh</button>
-            @php $dailyReportsOn = ! empty(auth()->user()->tenant->settings['daily_email_reports']); @endphp
+            @php $dailyReportsOn = ! empty(auth()->user()->tenant?->settings['daily_email_reports']); @endphp
             <button wire:click="toggleDailyReports" class="px-3 py-2 border rounded-lg text-sm {{ $dailyReportsOn ? 'border-green-300 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' : 'hover:bg-gray-50' }}">
                 📧 Daily Email Reports: {{ $dailyReportsOn ? 'Enabled' : 'Disabled' }}
             </button>

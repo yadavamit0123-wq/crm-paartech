@@ -3,7 +3,6 @@
 namespace App\Livewire\Leads;
 
 use App\Models\Automation;
-use App\Models\Broadcast;
 use App\Models\CallLog;
 use App\Models\CrmTask;
 use App\Models\Lead;
@@ -12,6 +11,8 @@ use App\Models\LeadStage;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\WhatsappConversation;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 
 class Dashboard extends Component
@@ -22,6 +23,10 @@ class Dashboard extends Component
     public function toggleDailyReports(): void
     {
         $tenant = auth()->user()->tenant;
+        if (! $tenant) {
+            return;
+        }
+
         $settings = $tenant->settings ?? [];
         $settings['daily_email_reports'] = empty($settings['daily_email_reports']);
         $tenant->update(['settings' => $settings]);
@@ -46,6 +51,7 @@ class Dashboard extends Component
     public function render()
     {
         $user = auth()->user();
+        $user->loadMissing('role.permissions', 'tenant');
         [$start, $end] = $this->getDateBounds();
 
         $leadQuery = Lead::query();
@@ -56,28 +62,32 @@ class Dashboard extends Component
             $leadQuery->where('assigned_to', $this->teamMember);
         }
 
-        $taskQuery = CrmTask::query()->whereBetween('created_at', [$start, $end]);
-        $callQuery = CallLog::query()->whereBetween('called_at', [$start, $end]);
-        $orderQuery = Order::query()->whereBetween('created_at', [$start, $end]);
+        $taskQuery = $this->tableQuery('crm_tasks', fn () => CrmTask::query()->whereBetween('created_at', [$start, $end]));
+        $callQuery = $this->tableQuery('call_logs', fn () => CallLog::query()->whereBetween('called_at', [$start, $end]));
+        $orderQuery = $this->tableQuery('orders', fn () => Order::query()->whereBetween('created_at', [$start, $end]));
 
         if ($this->teamMember) {
-            $taskQuery->where('user_id', $this->teamMember);
-            $callQuery->where('user_id', $this->teamMember);
-            $orderQuery->where('created_by', $this->teamMember);
+            $taskQuery?->where('user_id', $this->teamMember);
+            $callQuery?->where('user_id', $this->teamMember);
+            $orderQuery?->where('created_by', $this->teamMember);
         }
 
         $analytics = [
             'leads' => (clone $leadQuery)->whereBetween('created_at', [$start, $end])->count(),
-            'calls' => (clone $callQuery)->count(),
-            'tasks' => (clone $taskQuery)->count(),
-            'sales' => (clone $orderQuery)->whereIn('status', ['confirmed', 'fulfilled', 'processing'])->sum('total_amount'),
+            'calls' => $callQuery ? (clone $callQuery)->count() : 0,
+            'tasks' => $taskQuery ? (clone $taskQuery)->count() : 0,
+            'sales' => $orderQuery
+                ? (clone $orderQuery)->whereIn('status', ['confirmed', 'fulfilled', 'processing'])->sum('total_amount')
+                : 0,
         ];
 
         $statusCards = [
             'created' => (clone $leadQuery)->whereBetween('created_at', [$start, $end])->count(),
             'assigned' => (clone $leadQuery)->whereNotNull('assigned_to')->whereBetween('created_at', [$start, $end])->count(),
             'untouched' => (clone $leadQuery)->whereNull('last_contacted_at')->count(),
-            'no_task' => (clone $leadQuery)->whereDoesntHave('tasks', fn ($q) => $q->where('status', 'pending'))->count(),
+            'no_task' => Schema::hasTable('lead_tasks')
+                ? (clone $leadQuery)->whereDoesntHave('openTasks')->count()
+                : 0,
             'stale' => (clone $leadQuery)->where('created_at', '<', now()->subDays(30))
                 ->where(function ($q) {
                     $q->whereNull('last_contacted_at')
@@ -87,23 +97,44 @@ class Dashboard extends Component
 
         $trendData = $this->buildTrendData($leadQuery, $callQuery, $taskQuery, $orderQuery, $start, $end);
 
+        $newStageIds = Schema::hasTable('lead_stages')
+            ? LeadStage::where('slug', 'new')->pluck('id')
+            : collect();
+        $wonStageIds = Schema::hasTable('lead_stages')
+            ? LeadStage::where('is_won', true)->pluck('id')
+            : collect();
+
         $stats = [
             'total_leads' => (clone $leadQuery)->count(),
-            'new_leads' => (clone $leadQuery)->whereHas('stage', fn ($q) => $q->where('slug', 'new'))->count(),
-            'won_leads' => (clone $leadQuery)->whereHas('stage', fn ($q) => $q->where('is_won', true))->count(),
+            'new_leads' => $newStageIds->isEmpty() ? 0 : (clone $leadQuery)->whereIn('lead_stage_id', $newStageIds)->count(),
+            'won_leads' => $wonStageIds->isEmpty() ? 0 : (clone $leadQuery)->whereIn('lead_stage_id', $wonStageIds)->count(),
             'follow_ups_today' => (clone $leadQuery)->whereDate('next_follow_up_at', today())->count(),
-            'overdue_tasks' => CrmTask::where('status', 'pending')->where('due_at', '<', now())->count(),
-            'unread_inbox' => WhatsappConversation::sum('unread_count'),
-            'calls_today' => CallLog::whereDate('called_at', today())->count(),
-            'orders_month' => Order::where('created_at', '>=', now()->startOfMonth())->count(),
-            'active_automations' => Automation::where('is_active', true)->count(),
-            'pending_reminders' => LeadReminder::where('user_id', $user->id)->where('is_completed', false)->where('remind_at', '<=', now()->addDay())->count(),
+            'overdue_tasks' => Schema::hasTable('crm_tasks')
+                ? CrmTask::where('status', 'pending')->where('due_at', '<', now())->count()
+                : 0,
+            'unread_inbox' => Schema::hasTable('whatsapp_conversations')
+                ? WhatsappConversation::sum('unread_count')
+                : 0,
+            'calls_today' => Schema::hasTable('call_logs')
+                ? CallLog::whereDate('called_at', today())->count()
+                : 0,
+            'orders_month' => Schema::hasTable('orders')
+                ? Order::where('created_at', '>=', now()->startOfMonth())->count()
+                : 0,
+            'active_automations' => Schema::hasTable('automations')
+                ? Automation::where('is_active', true)->count()
+                : 0,
+            'pending_reminders' => Schema::hasTable('lead_reminders')
+                ? LeadReminder::where('user_id', $user->id)->where('is_completed', false)->where('remind_at', '<=', now()->addDay())->count()
+                : 0,
         ];
 
         $recentLeads = (clone $leadQuery)->with(['stage', 'label', 'assignee'])->latest()->limit(5)->get();
-        $stageStats = LeadStage::withCount('leads')->orderBy('sort_order')->get();
+        $stageStats = Schema::hasTable('lead_stages')
+            ? LeadStage::withCount('leads')->orderBy('sort_order')->get()
+            : collect();
         $modules = $this->getModuleCards($user);
-        $employees = User::where('tenant_id', $user->tenant_id)->where('is_active', true)->get();
+        $employees = User::where('tenant_id', $user->tenant_id)->where('is_active', true)->get(['id', 'name']);
         $activeTrendTab = 'leads';
 
         return view('livewire.leads.dashboard', compact(
@@ -111,9 +142,20 @@ class Dashboard extends Component
         ))->layout('layouts.app');
     }
 
+    protected function tableQuery(string $table, callable $make): ?Builder
+    {
+        return Schema::hasTable($table) ? $make() : null;
+    }
+
     protected function buildTrendData($leadQuery, $callQuery, $taskQuery, $orderQuery, $start, $end): array
     {
-        $days = min($start->diffInDays($end) + 1, 30);
+        $days = max(1, min((int) $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + 1, 30));
+
+        $leadsByDay = $this->aggregateByDay((clone $leadQuery), 'created_at', $start, $end);
+        $callsByDay = $callQuery ? $this->aggregateByDay((clone $callQuery), 'called_at', $start, $end) : [];
+        $tasksByDay = $taskQuery ? $this->aggregateByDay((clone $taskQuery), 'created_at', $start, $end) : [];
+        $salesByDay = $orderQuery ? $this->aggregateByDay((clone $orderQuery), 'created_at', $start, $end, 'SUM(total_amount)') : [];
+
         $labels = [];
         $leads = [];
         $calls = [];
@@ -122,14 +164,29 @@ class Dashboard extends Component
 
         for ($i = $days - 1; $i >= 0; $i--) {
             $date = now()->subDays($i);
+            $key = $date->toDateString();
             $labels[] = $date->format('d M');
-            $leads[] = (clone $leadQuery)->whereDate('created_at', $date)->count();
-            $calls[] = (clone $callQuery)->whereDate('called_at', $date)->count();
-            $tasks[] = (clone $taskQuery)->whereDate('created_at', $date)->count();
-            $sales[] = (clone $orderQuery)->whereDate('created_at', $date)->sum('total_amount');
+            $leads[] = (int) ($leadsByDay[$key] ?? 0);
+            $calls[] = (int) ($callsByDay[$key] ?? 0);
+            $tasks[] = (int) ($tasksByDay[$key] ?? 0);
+            $sales[] = (float) ($salesByDay[$key] ?? 0);
         }
 
         return compact('labels', 'leads', 'calls', 'tasks', 'sales');
+    }
+
+    protected function aggregateByDay(Builder $query, string $column, $start, $end, string $aggregate = 'COUNT(*)'): array
+    {
+        $dateExpr = $query->getConnection()->getDriverName() === 'sqlite'
+            ? "date({$column})"
+            : "DATE({$column})";
+
+        return $query
+            ->whereBetween($column, [$start, $end])
+            ->selectRaw("{$dateExpr} as day_key, {$aggregate} as day_value")
+            ->groupByRaw($dateExpr)
+            ->pluck('day_value', 'day_key')
+            ->all();
     }
 
     protected function getModuleCards($user): array

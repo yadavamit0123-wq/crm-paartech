@@ -103,9 +103,17 @@ class Index extends Component
     public function render()
     {
         $tenant = auth()->user()->tenant;
-        $whatsappConnected = ! empty($tenant->settings['whatsapp_connected']);
-        $instagramConnected = ! empty($tenant->settings['instagram_connected']);
-        $messengerConnected = ! empty($tenant->settings['messenger_connected']);
+        $whatsappConnected = ! empty($tenant?->settings['whatsapp_connected']);
+        $instagramConnected = ! empty($tenant?->settings['instagram_connected']);
+        $messengerConnected = ! empty($tenant?->settings['messenger_connected']);
+
+        if (! \Illuminate\Support\Facades\Schema::hasTable('whatsapp_conversations')) {
+            $conversations = collect();
+            $active = null;
+
+            return view('livewire.inbox.index', compact('conversations', 'active', 'whatsappConnected', 'instagramConnected', 'messengerConnected'))
+                ->layout('layouts.app');
+        }
 
         $conversations = WhatsappConversation::with(['lead', 'assignee'])
             ->when($this->search, fn ($q) => $q->where(function ($q) {

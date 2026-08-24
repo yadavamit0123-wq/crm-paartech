@@ -192,6 +192,13 @@ class Index extends Component
 
     public function render()
     {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('products')) {
+            return view('livewire.products.index', [
+                'products' => collect(),
+                'categories' => collect(),
+            ])->layout('layouts.app');
+        }
+
         $products = Product::query()
             ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%")->orWhere('sku', 'like', "%{$this->search}%"))
             ->when($this->filterCategory, fn ($q) => $q->where('category', $this->filterCategory))

@@ -1,4 +1,4 @@
-<div wire:poll.60s="loadReminders">
+<div wire:poll.visible.120s="loadReminders">
     <div class="relative" x-data="{ open: false }">
         <button @click="open = !open" class="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             🔔

@@ -1,4 +1,4 @@
-<div wire:poll.30s="refreshDue">
+<div wire:poll.visible.60s="refreshDue">
     @if(count($due))
     <div class="fixed top-0 inset-x-0 z-50 shadow-lg" role="alert">
         <div class="bg-gradient-to-r from-red-600 via-red-500 to-amber-500 text-white px-4 py-3">
